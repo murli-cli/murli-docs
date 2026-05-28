@@ -1,0 +1,92 @@
+[
+  {
+    "title": "Overview",
+    "group": "Introduction",
+    "url": "/index.html",
+    "keywords": "home start murli overview introduction two audiences cli agent middleware"
+  },
+  {
+    "title": "The 5 Principles",
+    "group": "Introduction",
+    "url": "/principles.html",
+    "keywords": "principles unified interface self-describing actionable errors intentional mutations bounded context"
+  },
+  {
+    "title": "Installation",
+    "group": "Guides",
+    "url": "/guides/installation.html",
+    "keywords": "install setup go get module cobra urfave cli v2 v3 requirements verify"
+  },
+  {
+    "title": "Quickstart",
+    "group": "Guides",
+    "url": "/guides/quickstart.html",
+    "keywords": "quickstart quick start minimal integration example cobra urfave cli execute run wrap"
+  },
+  {
+    "title": "What you get free",
+    "group": "Guides",
+    "url": "/guides/free.html",
+    "keywords": "free automatic tty detection agent flag schema describe doctor profile force yes dry-run json log deduplication subcommands injected"
+  },
+  {
+    "title": "What you configure",
+    "group": "Guides",
+    "url": "/guides/configure.html",
+    "keywords": "configure metadata annotate flag annotation profileable sensitive enum profiles check conventions linter"
+  },
+  {
+    "title": "What you build",
+    "group": "Guides",
+    "url": "/guides/build.html",
+    "keywords": "build write success error event progress plan logger agents md format agents dry run ndjson streaming"
+  },
+  {
+    "title": "Go",
+    "group": "Language Reference",
+    "url": "/lang/go.html",
+    "keywords": "go cobra urfave cli v2 v3 writer logger metadata profiles utilities agent error new writer annotate execute enable run wrap build describe tree"
+  },
+  {
+    "title": "TypeScript",
+    "group": "Language Reference",
+    "url": "/lang/typescript.html",
+    "keywords": "typescript planned commander yargs oclif citty"
+  },
+  {
+    "title": "Rust",
+    "group": "Language Reference",
+    "url": "/lang/rust.html",
+    "keywords": "rust planned clap argh derive builder crates"
+  },
+  {
+    "title": "Python",
+    "group": "Language Reference",
+    "url": "/lang/python.html",
+    "keywords": "python planned click typer argparse pip packages"
+  },
+  {
+    "title": "Exit codes",
+    "group": "API",
+    "url": "/api/exit-codes.html",
+    "keywords": "exit codes 0 1 2 3 4 5 6 7 8 9 ok user error tool error partial timeout not found permission conflict rate limited cancelled exit func"
+  },
+  {
+    "title": "Schema · describe",
+    "group": "API",
+    "url": "/api/schema.html",
+    "keywords": "schema describe describe output command schema flag schema capabilities profiles info safety block idempotent destructive dry run supported"
+  },
+  {
+    "title": "Envelopes",
+    "group": "API",
+    "url": "/api/envelopes.html",
+    "keywords": "envelopes json success error event plan progress ndjson schema version tool version stdout stderr"
+  },
+  {
+    "title": "Roadmap",
+    "group": "Project",
+    "url": "/roadmap.html",
+    "keywords": "roadmap v1.0 chapter 2 typescript rust python planned future"
+  }
+]
