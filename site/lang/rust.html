@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rust — murli docs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/theme.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-left">
+    <a class="brand" href="/"><span class="glyph">&#9834;</span><span>murli</span><span class="ver">v1.0.0</span></a>
+  </div>
+  <div class="topbar-mid">
+    <button class="kbar" id="search-btn" type="button">
+      <span style="color:var(--muted)">&#x2315;</span><span>Search docs&hellip;</span>
+      <span class="kbd"><span>&#8984;</span><span>K</span></span>
+    </button>
+  </div>
+  <div class="topbar-right">
+    <button class="iconbtn" id="theme-btn" type="button" title="Toggle theme" onclick="_toggleTheme()">&#x2600;</button>
+    <a class="linkbtn" href="https://github.com/allank/murli" target="_blank" rel="noopener noreferrer">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px">{ }</span> github
+    </a>
+  </div>
+</header>
+<nav class="sidebar">
+  <div class="sb-group">
+    <div class="sb-group-title">Introduction</div>
+    <a class="sb-link" href="/index.html">Overview</a>
+    <a class="sb-link" href="/principles.html">The 5 Principles</a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-title">Guides</div>
+    <a class="sb-link" href="/guides/installation.html">Installation</a>
+    <a class="sb-link" href="/guides/quickstart.html">Quickstart</a>
+    <a class="sb-link" href="/guides/free.html">What you get free</a>
+    <a class="sb-link" href="/guides/configure.html">What you configure</a>
+    <a class="sb-link" href="/guides/build.html">What you build</a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-title">Language Reference</div>
+    <a class="sb-link" href="/lang/go.html">Go <span class="tag stable">stable</span></a>
+    <a class="sb-link" href="/lang/typescript.html">TypeScript <span class="tag planned">planned</span></a>
+    <a class="sb-link" href="/lang/rust.html">Rust <span class="tag planned">planned</span></a>
+    <a class="sb-link" href="/lang/python.html">Python <span class="tag planned">planned</span></a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-title">API</div>
+    <a class="sb-link" href="/api/exit-codes.html">Exit codes</a>
+    <a class="sb-link" href="/api/schema.html">Schema &middot; describe</a>
+    <a class="sb-link" href="/api/envelopes.html">Envelopes</a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-title">Project</div>
+    <a class="sb-link" href="/roadmap.html">Roadmap</a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-title">External</div>
+    <a class="sb-link" href="https://github.com/allank/murli" target="_blank" rel="noopener noreferrer">github &#x2197;</a>
+    <a class="sb-link" href="https://pkg.go.dev/github.com/allank/murli" target="_blank" rel="noopener noreferrer">pkg.go.dev &#x2197;</a>
+  </div>
+</nav>
+<div class="content">
+  <main class="page">
+
+    <div class="eyebrow">&sect; Language Reference</div>
+    <h1 class="page-title">Rust <span class="pill planned" style="font-size:13px;margin-left:12px">&#x25D0; planned</span></h1>
+    <p class="lede">Adapters for <code>clap</code> (derive and builder APIs) and <code>argh</code>. The Rust implementation will share the same wire format and design principles as the Go reference.</p>
+
+    <div class="callout warn">
+      <span class="h">// Status</span>
+      Not yet published. Crates not yet available on crates.io. Track progress at <a href="https://github.com/allank/murli" target="_blank" rel="noopener noreferrer">github.com/allank/murli</a>.
+    </div>
+
+    <h2>Planned crates</h2>
+    <table class="tbl">
+      <thead><tr><th>Crate</th><th>Framework</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">murli-clap</td><td>clap (derive + builder)</td><td class="muted">planned</td></tr>
+        <tr><td class="mono">murli-argh</td><td>argh</td><td class="muted">planned</td></tr>
+      </tbody>
+    </table>
+
+    <p>When available, this page will contain the full Rust API reference, Cargo.toml configuration, and framework-specific quickstart examples.</p>
+
+    <nav class="pn-row">
+      <a class="pn" href="/lang/typescript.html">
+        <div class="lbl">&larr; language reference</div>
+        <div class="nm">TypeScript</div>
+      </a>
+      <a class="pn next" href="/lang/python.html">
+        <div class="lbl">language reference &rarr;</div>
+        <div class="nm">Python</div>
+      </a>
+    </nav>
+
+  </main>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@7/dist/fuse.min.js"></script>
+<script src="/search.js"></script>
+</body>
+</html>
