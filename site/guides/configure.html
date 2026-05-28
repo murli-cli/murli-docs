@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>What you configure — murli docs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/theme.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-left">
+    <a class="brand" href="/"><span class="glyph">&#9834;</span><span>murli</span><span class="ver">v1.0.0</span></a>
+  </div>
+  <div class="topbar-mid">
+    <button class="kbar" id="search-btn" type="button">
+      <span style="color:var(--muted)">&#x2315;</span><span>Search docs&hellip;</span>
+      <span class="kbd"><span>&#8984;</span><span>K</span></span>
+    </button>
+  </div>
+  <div class="topbar-right">
+    <button class="iconbtn" id="theme-btn" type="button" title="Toggle theme" onclick="_toggleTheme()">&#x2600;</button>
+    <a class="linkbtn" href="https://github.com/allank/murli" target="_blank" rel="noopener noreferrer">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px">{ }</span> github
+    </a>
+  </div>
+</header>
+<nav class="sidebar">
+  <div class="sb-group">
+    <div class="sb-group-title">Introduction</div>
+    <a class="sb-link" href="/index.html">Overview</a>
+    <a class="sb-link" href="/principles.html">The 5 Principles</a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-title">Guides</div>
+    <a class="sb-link" href="/guides/installation.html">Installation</a>
+    <a class="sb-link" href="/guides/quickstart.html">Quickstart</a>
+    <a class="sb-link" href="/guides/free.html">What you get free</a>
+    <a class="sb-link" href="/guides/configure.html">What you configure</a>
+    <a class="sb-link" href="/guides/build.html">What you build</a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-title">Language Reference</div>
+    <a class="sb-link" href="/lang/go.html">Go <span class="tag stable">stable</span></a>
+    <a class="sb-link" href="/lang/typescript.html">TypeScript <span class="tag planned">planned</span></a>
+    <a class="sb-link" href="/lang/rust.html">Rust <span class="tag planned">planned</span></a>
+    <a class="sb-link" href="/lang/python.html">Python <span class="tag planned">planned</span></a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-title">API</div>
+    <a class="sb-link" href="/api/exit-codes.html">Exit codes</a>
+    <a class="sb-link" href="/api/schema.html">Schema &middot; describe</a>
+    <a class="sb-link" href="/api/envelopes.html">Envelopes</a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-title">Project</div>
+    <a class="sb-link" href="/roadmap.html">Roadmap</a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-title">External</div>
+    <a class="sb-link" href="https://github.com/allank/murli" target="_blank" rel="noopener noreferrer">github &#x2197;</a>
+    <a class="sb-link" href="https://pkg.go.dev/github.com/allank/murli" target="_blank" rel="noopener noreferrer">pkg.go.dev &#x2197;</a>
+  </div>
+</nav>
+<div class="content">
+  <main class="page">
+
+    <div class="eyebrow">&sect; Guides</div>
+    <h1 class="page-title">What you configure</h1>
+    <p class="lede">These are opt-in annotations. They add agent-useful metadata to your commands and flags without changing handler logic. Call them once per command, outside your handlers.</p>
+
+    <h2>Metadata annotations</h2>
+    <p><code>Annotate</code> attaches a <code>Metadata</code> struct to a command. The fields appear in <code>--schema</code> and <code>describe</code> output so agents can understand the command without running it.</p>
+
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">go</span><span class="filename">cobra example</span></div>
+      <pre>murliCobra.Annotate(queryCmd, murli.Metadata{
+	AgentDescription: "Search the document index for semantically similar content.",
+	WhenToUse:        "When the user wants to find documents by meaning rather than keyword.",
+	Idempotent:       true,
+	Returns: &amp;murli.ReturnSchema{
+		Type:        "json",
+		Description: "Ranked list of search results",
+		Shape: map[string]any{
+			"path":  "string",
+			"score": "float32",
+		},
+	},
+	Examples: []murli.Example{
+		{
+			Command:          "mytool query woodworking",
+			Description:      "Find documents about woodworking",
+			ExpectedExitCode: 0,
+		},
+	},
+})</pre>
+    </div>
+
+    <h3>Metadata fields</h3>
+    <table class="tbl">
+      <thead><tr><th>Field</th><th>Type</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">AgentDescription</td><td class="mono muted">string</td><td>Human-readable description optimised for agent consumption. Appears in schema output.</td></tr>
+        <tr><td class="mono">WhenToUse</td><td class="mono muted">string</td><td>Guidance on when an agent should choose this command over alternatives.</td></tr>
+        <tr><td class="mono">Idempotent</td><td class="mono muted">bool</td><td>True if the command can be called multiple times with the same result. Surfaced in schema as <code>safety.idempotent</code>.</td></tr>
+        <tr><td class="mono">Mutating</td><td class="mono muted">bool</td><td>True if the command changes state. Surfaced as <code>safety.read_only: false</code>.</td></tr>
+        <tr><td class="mono">DryRunnable</td><td class="mono muted">bool</td><td>True if the command supports <code>--dry-run</code>. Surfaced as <code>safety.dry_run_supported</code>.</td></tr>
+        <tr><td class="mono">Destructive</td><td class="mono muted">bool</td><td>True if the command deletes or irreversibly modifies data.</td></tr>
+        <tr><td class="mono">Returns</td><td class="mono muted">*ReturnSchema</td><td>Shape and description of the JSON payload written by <code>WriteSuccess</code>.</td></tr>
+        <tr><td class="mono">Arguments</td><td class="mono muted">[]ArgumentMetadata</td><td>Positional argument descriptions (name, type, required, description).</td></tr>
+        <tr><td class="mono">Examples</td><td class="mono muted">[]Example</td><td>Worked examples with command string, description, and expected exit code.</td></tr>
+        <tr><td class="mono">FlagAnnotations</td><td class="mono muted">map[string]FlagAnnotation</td><td>Per-flag annotations. Key is the flag name.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Flag annotations</h2>
+    <p>Use <code>FlagAnnotations</code> in the <code>Metadata</code> struct to attach per-flag metadata. This is where you mark sensitive flags, declare enum values, and flag profileable parameters.</p>
+
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">go</span></div>
+      <pre>murliCobra.Annotate(queryCmd, murli.Metadata{
+	FlagAnnotations: map[string]murli.FlagAnnotation{
+		"top":     {Enum: []string{"5", "10", "20", "50"}},
+		"token":   {Sensitive: true},
+		"format":  {Profileable: true},
+	},
+})</pre>
+    </div>
+
+    <h3>FlagAnnotation fields</h3>
+    <table class="tbl">
+      <thead><tr><th>Field</th><th>Type</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">Sensitive</td><td class="mono muted">bool</td><td>Value is redacted in schema output and logs</td></tr>
+        <tr><td class="mono">Profileable</td><td class="mono muted">bool</td><td>Flag can be saved and recalled via named profiles</td></tr>
+        <tr><td class="mono">Persistent</td><td class="mono muted">bool</td><td>Flag applies to all subcommands</td></tr>
+        <tr><td class="mono">Enum</td><td class="mono muted">[]string</td><td>Valid values. Surfaced in schema and error envelopes.</td></tr>
+        <tr><td class="mono">MutuallyExclusiveWith</td><td class="mono muted">[]string</td><td>Flag names that cannot be used together with this flag</td></tr>
+        <tr><td class="mono">Pattern</td><td class="mono muted">string</td><td>Regex pattern the value must match (informational, not enforced by murli)</td></tr>
+        <tr><td class="mono">Env</td><td class="mono muted">string</td><td>Environment variable that sets this flag when present</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Profiles</h2>
+    <p>Profiles let users save named sets of flag values and recall them with <code>--profile &lt;name&gt;</code>. The <code>profile</code> subcommand is auto-mounted. Mark any flag as <code>Profileable: true</code> in its <code>FlagAnnotation</code> to include it in profile operations.</p>
+
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">shell</span></div>
+      <pre># Save current flags as a named profile
+$ mytool profile set dev --top 10 --format table
+
+# Use the profile in a subsequent call
+$ mytool query woodworking --profile dev
+# equivalent to: mytool query woodworking --top 10 --format table
+
+# List available profiles
+$ mytool profile list</pre>
+    </div>
+
+    <p>Profile data is stored in <code>~/.config/&lt;toolname&gt;/profiles.json</code>. The path is returned by <code>murli.ProfilePath(toolName)</code>. Engineers who need direct access to the store can use <code>murli.LoadProfileStore(toolName)</code>. See the <a href="/lang/go.html">Go reference</a> for the full <code>ProfileStore</code> API.</p>
+
+    <h2>Conventions linter</h2>
+    <p><code>murli.CheckConventions</code> checks command and flag names against the conventional vocabulary (get/list/delete, --json/--force/--quiet) and writes advisory warnings. It returns the number of issues found. Run it in CI or as a test.</p>
+
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">go</span><span class="filename">conventions_test.go</span></div>
+      <pre>func TestConventions(t *testing.T) {
+	issues := murli.CheckConventions(
+		[]string{"get", "list", "delete", "fetch"}, // "fetch" will warn
+		[]string{"json", "force", "format"},         // "format" will warn
+		os.Stderr,
+	)
+	if issues &gt; 0 {
+		t.Errorf("found %d convention issues", issues)
+	}
+}</pre>
+    </div>
+
+    <nav class="pn-row">
+      <a class="pn" href="/guides/free.html">
+        <div class="lbl">&larr; guides</div>
+        <div class="nm">What you get free</div>
+      </a>
+      <a class="pn next" href="/guides/build.html">
+        <div class="lbl">guides &rarr;</div>
+        <div class="nm">What you build</div>
+      </a>
+    </nav>
+
+  </main>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@7/dist/fuse.min.js"></script>
+<script src="/search.js"></script>
+</body>
+</html>

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>What you build — murli docs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/theme.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-left">
+    <a class="brand" href="/"><span class="glyph">&#9834;</span><span>murli</span><span class="ver">v1.0.0</span></a>
+  </div>
+  <div class="topbar-mid">
+    <button class="kbar" id="search-btn" type="button">
+      <span style="color:var(--muted)">&#x2315;</span><span>Search docs&hellip;</span>
+      <span class="kbd"><span>&#8984;</span><span>K</span></span>
+    </button>
+  </div>
+  <div class="topbar-right">
+    <button class="iconbtn" id="theme-btn" type="button" title="Toggle theme" onclick="_toggleTheme()">&#x2600;</button>
+    <a class="linkbtn" href="https://github.com/allank/murli" target="_blank" rel="noopener noreferrer">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px">{ }</span> github
+    </a>
+  </div>
+</header>
+<nav class="sidebar">
+  <div class="sb-group">
+    <div class="sb-group-title">Introduction</div>
+    <a class="sb-link" href="/index.html">Overview</a>
+    <a class="sb-link" href="/principles.html">The 5 Principles</a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-title">Guides</div>
+    <a class="sb-link" href="/guides/installation.html">Installation</a>
+    <a class="sb-link" href="/guides/quickstart.html">Quickstart</a>
+    <a class="sb-link" href="/guides/free.html">What you get free</a>
+    <a class="sb-link" href="/guides/configure.html">What you configure</a>
+    <a class="sb-link" href="/guides/build.html">What you build</a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-title">Language Reference</div>
+    <a class="sb-link" href="/lang/go.html">Go <span class="tag stable">stable</span></a>
+    <a class="sb-link" href="/lang/typescript.html">TypeScript <span class="tag planned">planned</span></a>
+    <a class="sb-link" href="/lang/rust.html">Rust <span class="tag planned">planned</span></a>
+    <a class="sb-link" href="/lang/python.html">Python <span class="tag planned">planned</span></a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-title">API</div>
+    <a class="sb-link" href="/api/exit-codes.html">Exit codes</a>
+    <a class="sb-link" href="/api/schema.html">Schema &middot; describe</a>
+    <a class="sb-link" href="/api/envelopes.html">Envelopes</a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-title">Project</div>
+    <a class="sb-link" href="/roadmap.html">Roadmap</a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-title">External</div>
+    <a class="sb-link" href="https://github.com/allank/murli" target="_blank" rel="noopener noreferrer">github &#x2197;</a>
+    <a class="sb-link" href="https://pkg.go.dev/github.com/allank/murli" target="_blank" rel="noopener noreferrer">pkg.go.dev &#x2197;</a>
+  </div>
+</nav>
+<div class="content">
+  <main class="page">
+
+    <div class="eyebrow">&sect; Guides</div>
+    <h1 class="page-title">What you build</h1>
+    <p class="lede">These are the calls you write inside your command handlers. murli provides the output methods; you call them with your data.</p>
+
+    <h2>WriteSuccess</h2>
+    <p>Call <code>WriteSuccess</code> at the end of a successful handler. At a TTY it prints <code>humanText</code>; when piped or in agent mode it prints the JSON success envelope with <code>jsonPayload</code> as the <code>result</code> field.</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">go</span></div>
+      <pre>func queryHandler(cmd *cobra.Command, args []string) error {
+	w := murliCobra.NewWriter(cmd)
+
+	results := []map[string]any{
+		{"path": "/docs/woodworking", "score": 0.95},
+	}
+	w.WriteSuccess("Found 1 result", results)
+	return nil
+}</pre>
+    </div>
+    <p>JSON output:</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">json</span></div>
+      <pre>{
+  "status": "ok",
+  "schema_version": "1.0",
+  "tool_version": "1.0.0",
+  "message": "Found 1 result",
+  "result": [{ "path": "/docs/woodworking", "score": 0.95 }]
+}</pre>
+    </div>
+
+    <h2>WriteError</h2>
+    <p>Call <code>WriteError</code> when a command fails. It writes the error envelope to stderr and calls <code>os.Exit</code> with the code from the <code>AgentError</code>. Do not return an error from the handler after calling <code>WriteError</code>.</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">go</span></div>
+      <pre>if !indexExists {
+	w.WriteError(murli.NewUserError(
+		"index not found",
+		"Run `mytool index build` to create the index.",
+	))
+	// execution stops here — WriteError calls os.Exit(1)
+}
+
+// For internal/unexpected errors:
+if err != nil {
+	w.WriteError(murli.NewToolError(err.Error()))
+}</pre>
+    </div>
+
+    <h2>WriteEvent — NDJSON streaming</h2>
+    <p>Use <code>WriteEvent</code> for commands that produce output incrementally. Each call writes one JSON object on one line to stdout. The final <code>WriteSuccess</code> call closes the stream.</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">go</span></div>
+      <pre>for _, chunk := range chunks {
+	w.WriteEvent(map[string]any{
+		"event": "chunk",
+		"index": chunk.Index,
+		"data":  chunk.Text,
+	})
+}
+w.WriteSuccess("Processed all chunks", summary)</pre>
+    </div>
+    <p>Output format (NDJSON — one JSON object per line):</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">ndjson</span></div>
+      <pre>{"event":"chunk","index":0,"data":"..."}
+{"event":"chunk","index":1,"data":"..."}
+{"status":"ok","message":"Processed all chunks","result":{...}}</pre>
+    </div>
+
+    <h2>WriteProgress</h2>
+    <p>Use <code>WriteProgress</code> for structured progress reporting. In TTY mode the progress is written to stderr. In agent mode each progress event is written as an NDJSON line to stdout. Use <code>w.Progress(msg)</code> for simple unstructured progress messages.</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">go</span></div>
+      <pre>for i, item := range items {
+	w.WriteProgress(murli.ProgressEvent{
+		Stage:   "processing",
+		Current: i + 1,
+		Total:   len(items),
+		Percent: float64(i+1) / float64(len(items)) * 100,
+		EtaMs:   estimatedRemainingMs,
+		Message: item.Name,
+	})
+	process(item)
+}
+w.WriteSuccess("Done", summary)</pre>
+    </div>
+
+    <h2>WritePlan — dry-run</h2>
+    <p>Use <code>WritePlan</code> when the handler is running in dry-run mode. It writes a plan envelope and exits cleanly. Check <code>w.IsDryRun()</code> before executing mutations.</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">go</span></div>
+      <pre>if w.IsDryRun() {
+	plan := map[string]any{
+		"would_delete": filesToDelete,
+		"count":        len(filesToDelete),
+	}
+	w.WritePlan("Would delete 3 files", plan)
+	return nil
+}
+
+// proceed with actual deletion
+for _, f := range filesToDelete {
+	os.Remove(f)
+}
+w.WriteSuccess("Deleted 3 files", nil)</pre>
+    </div>
+
+    <h2>Log and Progress</h2>
+    <p><code>w.Log(msg)</code> writes a diagnostic line to stderr. Consecutive identical lines are deduplicated. Use <code>w.Progress(msg)</code> for progress lines that should overwrite each other in TTY mode.</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">go</span></div>
+      <pre>w := murliCobra.NewWriter(cmd)
+w.Log("connecting to index...")
+w.Progress("[1/3] reading corpus")
+// repeated identical Progress calls are collapsed to one line</pre>
+    </div>
+
+    <h2>FormatAgentsMD</h2>
+    <p><code>murli.FormatAgentsMD</code> generates an <code>AGENTS.md</code> stub from the <code>describe</code> output of your CLI. Useful for bootstrapping agent documentation.</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">go</span><span class="filename">cmd/gen-agents-md/main.go</span></div>
+      <pre>describeOut := murliCobra.BuildDescribeTree(rootCmd)
+agentsMD := murli.FormatAgentsMD(murli.DescribeOutput{
+	Name:     rootCmd.Use,
+	Commands: []murli.DescribeCommandSchema{describeOut},
+})
+fmt.Print(agentsMD)</pre>
+    </div>
+
+    <nav class="pn-row">
+      <a class="pn" href="/guides/configure.html">
+        <div class="lbl">&larr; guides</div>
+        <div class="nm">What you configure</div>
+      </a>
+      <a class="pn next" href="/lang/go.html">
+        <div class="lbl">language reference &rarr;</div>
+        <div class="nm">Go</div>
+      </a>
+    </nav>
+
+  </main>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@7/dist/fuse.min.js"></script>
+<script src="/search.js"></script>
+</body>
+</html>
