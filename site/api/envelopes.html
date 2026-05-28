@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Envelopes — murli docs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/theme.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-left">
+    <a class="brand" href="/"><span class="glyph">&#9834;</span><span>murli</span><span class="ver">v1.0.0</span></a>
+  </div>
+  <div class="topbar-mid">
+    <button class="kbar" id="search-btn" type="button">
+      <span style="color:var(--muted)">&#x2315;</span><span>Search docs&hellip;</span>
+      <span class="kbd"><span>&#8984;</span><span>K</span></span>
+    </button>
+  </div>
+  <div class="topbar-right">
+    <button class="iconbtn" id="theme-btn" type="button" title="Toggle theme" onclick="_toggleTheme()">&#x2600;</button>
+    <a class="linkbtn" href="https://github.com/allank/murli" target="_blank" rel="noopener noreferrer">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px">{ }</span> github
+    </a>
+  </div>
+</header>
+<nav class="sidebar">
+  <div class="sb-group">
+    <div class="sb-group-title">Introduction</div>
+    <a class="sb-link" href="/index.html">Overview</a>
+    <a class="sb-link" href="/principles.html">The 5 Principles</a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-title">Guides</div>
+    <a class="sb-link" href="/guides/installation.html">Installation</a>
+    <a class="sb-link" href="/guides/quickstart.html">Quickstart</a>
+    <a class="sb-link" href="/guides/free.html">What you get free</a>
+    <a class="sb-link" href="/guides/configure.html">What you configure</a>
+    <a class="sb-link" href="/guides/build.html">What you build</a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-title">Language Reference</div>
+    <a class="sb-link" href="/lang/go.html">Go <span class="tag stable">stable</span></a>
+    <a class="sb-link" href="/lang/typescript.html">TypeScript <span class="tag planned">planned</span></a>
+    <a class="sb-link" href="/lang/rust.html">Rust <span class="tag planned">planned</span></a>
+    <a class="sb-link" href="/lang/python.html">Python <span class="tag planned">planned</span></a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-title">API</div>
+    <a class="sb-link" href="/api/exit-codes.html">Exit codes</a>
+    <a class="sb-link" href="/api/schema.html">Schema &middot; describe</a>
+    <a class="sb-link" href="/api/envelopes.html">Envelopes</a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-title">Project</div>
+    <a class="sb-link" href="/roadmap.html">Roadmap</a>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-title">External</div>
+    <a class="sb-link" href="https://github.com/allank/murli" target="_blank" rel="noopener noreferrer">github &#x2197;</a>
+    <a class="sb-link" href="https://pkg.go.dev/github.com/allank/murli" target="_blank" rel="noopener noreferrer">pkg.go.dev &#x2197;</a>
+  </div>
+</nav>
+<div class="content">
+  <main class="page">
+
+    <div class="eyebrow">&sect; API</div>
+    <h1 class="page-title">Envelopes</h1>
+    <p class="lede">Every murli output method writes a JSON envelope to stdout or stderr. The envelope shape is consistent across all language implementations and all versions within the 1.x series.</p>
+
+    <div class="callout info">
+      <span class="h">// Output channel</span>
+      Success, plan, and event envelopes are written to <strong>stdout</strong>. Error envelopes are written to <strong>stderr</strong>. Progress lines (non-NDJSON) are also written to stderr. Agents should read stdout and stderr independently.
+    </div>
+
+    <h2>Success envelope</h2>
+    <p>Written by <code>WriteSuccess(humanText, jsonPayload)</code>.</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">json</span><span class="filename">stdout</span></div>
+      <pre>{
+  "status": "ok",
+  "schema_version": "1.0",
+  "tool_version": "1.0.0",
+  "message": "Found 1 result",
+  "result": { ... }
+}</pre>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>Field</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">status</td><td>Always <code>"ok"</code></td></tr>
+        <tr><td class="mono">schema_version</td><td>Always <code>"1.0"</code> in the v1.x series</td></tr>
+        <tr><td class="mono">tool_version</td><td>Value of <code>murli.ToolVersion</code>. Empty string if not set at build time.</td></tr>
+        <tr><td class="mono">message</td><td>The <code>humanText</code> argument to <code>WriteSuccess</code></td></tr>
+        <tr><td class="mono">result</td><td>The <code>jsonPayload</code> argument, marshalled as JSON. <code>null</code> if nil.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Error envelope</h2>
+    <p>Written to stderr by <code>WriteError(err)</code>. The process exits with <code>err.Code</code> immediately after writing.</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">json</span><span class="filename">stderr</span></div>
+      <pre>{
+  "status": "error",
+  "code": 1,
+  "error": "user_error",
+  "message": "flag --top: invalid value \"abc\" for int flag",
+  "suggestion": "Valid values are 5, 10, 20, 50.",
+  "valid_values": ["5", "10", "20", "50"],
+  "recoverable": true,
+  "retry_after_ms": 0,
+  "schema_version": "1.0",
+  "tool_version": "1.0.0"
+}</pre>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>Field</th><th>Always present</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">status</td><td>Yes</td><td>Always <code>"error"</code></td></tr>
+        <tr><td class="mono">code</td><td>Yes</td><td>Exit code (0&ndash;9). See <a href="/api/exit-codes.html">Exit codes</a>.</td></tr>
+        <tr><td class="mono">error</td><td>Yes</td><td>Machine-readable error category string</td></tr>
+        <tr><td class="mono">message</td><td>Yes</td><td>Human-readable description</td></tr>
+        <tr><td class="mono">suggestion</td><td>No</td><td>What to do next</td></tr>
+        <tr><td class="mono">valid_values</td><td>No</td><td>Acceptable values when an enum was violated</td></tr>
+        <tr><td class="mono">recoverable</td><td>Yes</td><td>Whether retrying the same call may succeed</td></tr>
+        <tr><td class="mono">retry_after_ms</td><td>No</td><td>Milliseconds to wait before retrying (rate-limit errors)</td></tr>
+        <tr><td class="mono">field</td><td>No</td><td>Flag or argument that caused the error</td></tr>
+        <tr><td class="mono">doc_url</td><td>No</td><td>Link to relevant documentation</td></tr>
+        <tr><td class="mono">schema_version</td><td>Yes</td><td>Always <code>"1.0"</code></td></tr>
+        <tr><td class="mono">tool_version</td><td>Yes</td><td>Value of <code>murli.ToolVersion</code></td></tr>
+      </tbody>
+    </table>
+
+    <h2>Plan envelope</h2>
+    <p>Written by <code>WritePlan(humanText, plan)</code> when the handler detects <code>w.IsDryRun() == true</code>.</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">json</span><span class="filename">stdout</span></div>
+      <pre>{
+  "status": "plan",
+  "schema_version": "1.0",
+  "tool_version": "1.0.0",
+  "message": "Would delete 3 files",
+  "plan": {
+    "would_delete": ["/tmp/a.db", "/tmp/b.db", "/tmp/c.db"],
+    "count": 3
+  }
+}</pre>
+    </div>
+
+    <h2>Event envelope (NDJSON)</h2>
+    <p>Written by <code>WriteEvent(v)</code>. One JSON object per line on stdout. Agents should read stdout line by line and parse each line as a separate JSON object.</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">ndjson</span><span class="filename">stdout — one line per call</span></div>
+      <pre>{"event":"chunk","index":0,"data":"first batch of results"}
+{"event":"chunk","index":1,"data":"second batch of results"}
+{"status":"ok","schema_version":"1.0","tool_version":"1.0.0","message":"Done","result":{"total":2}}</pre>
+    </div>
+    <p>The final line is always a success or error envelope. Intermediate lines are application-defined event objects.</p>
+
+    <h2>Progress envelope (NDJSON)</h2>
+    <p>Written by <code>WriteProgress(evt)</code> when in agent mode. In TTY mode, progress is written as plain text to stderr instead.</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">ndjson</span><span class="filename">stdout (agent mode only)</span></div>
+      <pre>{"event":"progress","stage":"read","current":1,"total":3,"percent":33,"message":"reading corpus"}
+{"event":"progress","stage":"embed","current":2,"total":3,"percent":66,"eta_ms":4200}
+{"event":"progress","stage":"write","current":3,"total":3,"percent":100}
+{"status":"ok","schema_version":"1.0","tool_version":"1.0.0","message":"Reindexed 4213 docs","result":{"count":4213}}</pre>
+    </div>
+
+    <nav class="pn-row">
+      <a class="pn" href="/api/schema.html">
+        <div class="lbl">&larr; api</div>
+        <div class="nm">Schema &middot; describe</div>
+      </a>
+      <a class="pn next" href="/roadmap.html">
+        <div class="lbl">project &rarr;</div>
+        <div class="nm">Roadmap</div>
+      </a>
+    </nav>
+
+  </main>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@7/dist/fuse.min.js"></script>
+<script src="/search.js"></script>
+</body>
+</html>
