@@ -1,0 +1,101 @@
+---
+title: What you get free
+group: Guides
+keywords: free automatic tty detection agent flag schema describe doctor profile force yes dry-run json log deduplication subcommands injected
+layout: base.njk
+---
+
+    <div class="eyebrow">&sect; Guides</div>
+    <h1 class="page-title">What you get free</h1>
+    <p class="lede">Everything in this section is automatic when you call <code>murliCobra.Execute(root)</code>, <code>murliCli.Run(app, args)</code>, or <code>murliCli.Wrap(app)</code>. No additional code is required.</p>
+
+    <h2>TTY detection and output routing</h2>
+    <p>When stdout is connected to a terminal, commands produce formatted human-readable output. When stdout is piped, commands produce JSON. The <code>--agent</code> flag forces JSON mode at a TTY for testing or explicit agent invocation.</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">shell</span></div>
+      <pre># TTY — formatted
+$ mytool query foo
+Found 1 result
+
+# Piped — JSON automatically
+$ mytool query foo | jq .result
+
+# Force JSON at TTY
+$ mytool query foo --agent</pre>
+    </div>
+    <p>This routing requires no code in your handlers. murli detects the TTY state when <code>NewWriter</code> is called and sets the output format accordingly.</p>
+
+    <h2>Auto-injected flags</h2>
+    <p>The following flags are added to every command in your CLI automatically:</p>
+    <table class="tbl">
+      <thead><tr><th>Flag</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">--agent</td><td>Forces JSON output regardless of TTY state</td></tr>
+        <tr><td class="mono">--schema</td><td>Prints the command schema as JSON and exits</td></tr>
+        <tr><td class="mono">--force, --yes</td><td>Bypasses non-interactive confirmation guards. Handlers check <code>w.IsForced()</code>.</td></tr>
+        <tr><td class="mono">--dry-run</td><td>Signals dry-run intent. Handlers check <code>w.IsDryRun()</code> and call <code>w.WritePlan()</code>.</td></tr>
+        <tr><td class="mono">--profile &lt;name&gt;</td><td>Loads a named flag profile before the handler runs</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Auto-mounted subcommands</h2>
+    <p>Three subcommands are mounted on the root command automatically:</p>
+    <table class="tbl">
+      <thead><tr><th>Subcommand</th><th>Output</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="mono">describe</td>
+          <td>Full command tree as a single JSON document. Includes every subcommand, flag, return schema, examples, and capabilities. See <a href="/api/schema.html">Schema &middot; describe</a>.</td>
+        </tr>
+        <tr>
+          <td class="mono">doctor</td>
+          <td>Health and configuration check output as JSON. Useful for verifying the integration is correctly wired. Only mounted when built with <code>-tags murlidev</code>; excluded from release binaries by default.</td>
+        </tr>
+        <tr>
+          <td class="mono">profile</td>
+          <td>Profile management subcommands: <code>list</code>, <code>set</code>, <code>use</code>, <code>delete</code>.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">shell</span></div>
+      <pre># Full command tree — one JSON document
+$ mytool describe | jq .
+
+# Per-command schema
+$ mytool query --schema | jq .
+
+# Health check (requires -tags murlidev)
+$ mytool doctor</pre>
+    </div>
+
+    <h2>Structured error envelopes</h2>
+    <p>Any error returned from a command handler is wrapped into an <code>AgentError</code> envelope automatically. The envelope includes an exit code, error type, message, and recoverability signal. Errors are written to stderr; the process exits with the appropriate code.</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">json</span><span class="filename">stderr (piped or --agent mode)</span></div>
+      <pre>{
+  "status": "error",
+  "code": 1,
+  "error": "user_error",
+  "message": "flag --top: invalid value \"abc\" for int flag",
+  "suggestion": "Check command usage with --schema or --help.",
+  "recoverable": true,
+  "schema_version": "1.0",
+  "tool_version": "1.0.2"
+}</pre>
+    </div>
+
+    <h2>Log deduplication</h2>
+    <p>The <code>Logger</code> used by <code>w.Log()</code> and <code>w.Progress()</code> suppresses consecutive identical lines. If your command loops and emits the same status message repeatedly, only the first occurrence is written to stderr. This prevents token waste in agent sessions that run many commands.</p>
+
+    <nav class="pn-row">
+      <a class="pn" href="/guides/quickstart.html">
+        <div class="lbl">&larr; guides</div>
+        <div class="nm">Quickstart</div>
+      </a>
+      <a class="pn next" href="/guides/configure.html">
+        <div class="lbl">guides &rarr;</div>
+        <div class="nm">What you configure</div>
+      </a>
+    </nav>

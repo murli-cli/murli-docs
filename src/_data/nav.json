@@ -1,0 +1,59 @@
+{
+  "groups": [
+    {
+      "title": "Introduction",
+      "links": [
+        { "label": "Overview", "url": "/index.html" },
+        { "label": "The 5 Principles", "url": "/principles.html" }
+      ]
+    },
+    {
+      "title": "Guides",
+      "links": [
+        { "label": "Installation", "url": "/guides/installation.html" },
+        { "label": "Quickstart", "url": "/guides/quickstart.html" },
+        { "label": "What you get free", "url": "/guides/free.html" },
+        { "label": "What you configure", "url": "/guides/configure.html" },
+        { "label": "What you build", "url": "/guides/build.html" }
+      ]
+    },
+    {
+      "title": "Walkthroughs",
+      "links": [
+        { "label": "Go · Cobra", "url": "/guides/walkthrough-cobra.html" },
+        { "label": "Go · urfave/cli v2", "url": "/guides/walkthrough-urfave-v2.html" },
+        { "label": "Go · urfave/cli v3", "url": "/guides/walkthrough-urfave-v3.html" }
+      ]
+    },
+    {
+      "title": "Language Reference",
+      "links": [
+        { "label": "Go", "url": "/lang/go.html", "tag": "stable" },
+        { "label": "TypeScript", "url": "/lang/typescript.html", "tag": "planned" },
+        { "label": "Rust", "url": "/lang/rust.html", "tag": "planned" },
+        { "label": "Python", "url": "/lang/python.html", "tag": "planned" }
+      ]
+    },
+    {
+      "title": "API",
+      "links": [
+        { "label": "Exit codes", "url": "/api/exit-codes.html" },
+        { "label": "Schema · describe", "url": "/api/schema.html" },
+        { "label": "Envelopes", "url": "/api/envelopes.html" }
+      ]
+    },
+    {
+      "title": "Project",
+      "links": [
+        { "label": "Roadmap", "url": "/roadmap.html" }
+      ]
+    },
+    {
+      "title": "External",
+      "links": [
+        { "label": "github ↗", "url": "https://github.com/murli-cli", "external": true },
+        { "label": "pkg.go.dev ↗", "url": "https://pkg.go.dev/github.com/murli-cli/murli-go", "external": true }
+      ]
+    }
+  ]
+}

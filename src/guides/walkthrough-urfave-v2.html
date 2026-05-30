@@ -1,0 +1,190 @@
+---
+title: "Walkthrough: Go · urfave/cli v2"
+group: Walkthroughs
+keywords: walkthrough urfave cli v2 go integration step by step imports run annotate metadata handler diff verification outputs task create list report force agent flag ordering positional
+layout: base.njk
+---
+
+    <div class="eyebrow">&sect; Walkthroughs</div>
+    <h1 class="page-title">Go &middot; urfave/cli v2</h1>
+    <p class="lede">A complete integration walkthrough applying murli to the <code>murli-work</code> reference CLI — a sprint task tracker built with <a href="https://github.com/urfave/cli" target="_blank" rel="noopener noreferrer">urfave/cli v2</a>. The source is in the <a href="https://github.com/murli-cli/murli-demo" target="_blank" rel="noopener noreferrer">murli-demo</a> repository on the <code>go/urfavecliv2</code> branch.</p>
+
+    <div class="callout info">
+      <span class="h">BEFORE YOU START</span>
+      This walkthrough assumes you have read the three concept guides:
+      <a href="/guides/free.html">What you get free</a>,
+      <a href="/guides/configure.html">What you configure</a>, and
+      <a href="/guides/build.html">What you build</a>.
+    </div>
+
+    <div class="callout warn">
+      <span class="h">STRICT FLAG PARSING ORDER</span>
+      urfave/cli v2 enforces strict positional argument ordering. Flags placed <em>after</em> a positional argument are treated as literal string arguments rather than parsed options. Always place flags <strong>before</strong> positional arguments when calling a v2 CLI:
+      <br><br>
+      &nbsp;&nbsp;&#x2718; <code>murli-work task create "My task" --agent --force</code><br>
+      &nbsp;&nbsp;&#x2714; <code>murli-work task create --agent --force "My task"</code>
+    </div>
+
+    <h2>Step 1 &mdash; Update imports</h2>
+    <p>Add the murli core package and the urfave/cli v2 adapter to your imports in <code>main.go</code>:</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">go</span></div>
+      <pre>import (
+	"github.com/murli-cli/murli-go"
+	murliCli "github.com/murli-cli/murli-go/cli/v2"
+)</pre>
+    </div>
+
+    <h2>Step 2 &mdash; Swap the executor</h2>
+    <p>Replace urfave/cli's standard <code>app.Run(os.Args)</code> call with Murli's adapter entry point.</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">diff</span></div>
+      <pre>-if err := app.Run(os.Args); err != nil {
++if err := murliCli.Run(app, os.Args); err != nil {
+ 	os.Exit(2)
+ }</pre>
+    </div>
+
+    <h2>Step 3 &mdash; Refactor handlers</h2>
+    <p>Replace <code>fmt.Println</code> calls and bare error returns in each <code>Action</code> block with the Writer API. The <code>init</code> command is a representative example:</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">diff</span></div>
+      <pre> {
+ 	Name:    "init",
+ 	Aliases: []string{"i"},
+ 	Usage:   "Initialize/Reset the database and config",
+ 	Action: func(c *cli.Context) error {
++		w := murliCli.NewWriter(c)
+ 		if err := shared.ResetDatabase(); err != nil {
+-			return err
++			w.WriteError(murli.NewUserError(err.Error(), "Could not reset the database."))
++			return nil
+ 		}
+ 		dir, _ := shared.GetStorageDir()
+-		fmt.Printf("Initialized/Reset murli-work database with sample data and configuration in %s\n", dir)
++		w.WriteSuccess(
++			fmt.Sprintf("Initialized/Reset murli-work database with sample data and configuration in %s", dir),
++			map[string]any{"status": "ok", "directory": dir},
++		)
+ 		return nil
+ 	},
+ },</pre>
+    </div>
+
+    <h2>Step 4 &mdash; Attach metadata</h2>
+    <p>Annotate commands with <code>murliCli.Annotate()</code> outside the execution loop. With urfave/cli v2, commands are referenced by index into the <code>Commands</code> and <code>Subcommands</code> slices:</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">go</span></div>
+      <pre>murliCli.Annotate(app.Commands[1].Subcommands[0], murli.Metadata{
+	AgentDescription: "Create a new task in the database.",
+	Mutating:         true,
+	Arguments: []murli.ArgumentMetadata{
+		{Name: "title", Type: "string", Required: true, Description: "Task title"},
+	},
+})</pre>
+    </div>
+
+    <h2>Verification outputs</h2>
+    <p>These are real captured outputs from the completed integration.</p>
+
+    <h3>Human TTY help</h3>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">shell</span><span class="filename">./bin/murli-work-go-urfave --help</span></div>
+      <pre>NAME:
+   murli-work - A sprint and project task tracker
+
+USAGE:
+   murli-work [global options] command [command options]
+
+COMMANDS:
+   init, i   Initialize/Reset the database and config
+   task      Manage sprint tasks
+   label     Manage global task labels
+   report    Display progress report
+   describe  Print the full command tree and capabilities as a single JSON document
+   profile   Manage saved flag profiles
+   help, h   Shows a list of commands or help for one command
+
+GLOBAL OPTIONS:
+   --profile value  Profile name to use for this invocation
+   --agent          Force agent-optimized JSON mode (default: false)
+   --help, -h       show help</pre>
+    </div>
+
+    <h3>Mutating command without confirmation</h3>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">shell</span><span class="filename">./bin/murli-work-go-urfave init --agent</span></div>
+      <pre>{
+  "code": 1,
+  "error": "confirmation_required",
+  "message": "This command mutates state and requires explicit confirmation.",
+  "suggestion": "Pass --force or --yes to proceed without a TTY.",
+  "recoverable": true,
+  "schema_version": "1.0"
+}</pre>
+    </div>
+
+    <h3>Bypassing the guard with <code>--force</code></h3>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">shell</span><span class="filename">./bin/murli-work-go-urfave init --agent --force</span></div>
+      <pre>{
+  "result": { "directory": "/Users/allank/Library/Application Support/murli-work", "status": "ok" },
+  "schema_version": "1.0",
+  "status": "ok"
+}</pre>
+    </div>
+
+    <h3>Creating a task (note flag ordering)</h3>
+    <p>Flags must come before the positional <code>title</code> argument:</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">shell</span><span class="filename">./bin/murli-work-go-urfave task create --agent --force --priority high "Verify Urfave V2"</span></div>
+      <pre>{
+  "result": { "id": 6, "title": "Verify Urfave V2" },
+  "schema_version": "1.0",
+  "status": "ok"
+}</pre>
+    </div>
+
+    <h3>Listing tasks</h3>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">shell</span><span class="filename">./bin/murli-work-go-urfave task list --agent</span></div>
+      <pre>{
+  "result": [
+    { "id": 1, "title": "Setup workspace layout", "status": "done", "priority": "high", "labels": ["setup", "dev"] },
+    { "id": 2, "title": "Implement Go Cobra reference", "status": "done", "priority": "high", "labels": ["go"] },
+    { "id": 3, "title": "Implement Go urfave/cli v2 reference", "status": "doing", "priority": "medium", "labels": ["go"] },
+    { "id": 4, "title": "Implement Go urfave/cli v3 reference", "status": "todo", "priority": "medium", "labels": ["go"] },
+    { "id": 5, "title": "Implement Rust clap reference", "status": "todo", "priority": "high", "labels": ["rust"] },
+    { "id": 6, "title": "Verify Urfave V2", "status": "todo", "priority": "high", "labels": [] }
+  ],
+  "schema_version": "1.0",
+  "status": "ok"
+}</pre>
+    </div>
+
+    <h3>Sprint report</h3>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">shell</span><span class="filename">./bin/murli-work-go-urfave report --agent</span></div>
+      <pre>{
+  "result": {
+    "completed_tasks": 2,
+    "percent_complete": 33.33,
+    "priority_breakdown": { "high": 4, "low": 0, "medium": 2 },
+    "status_breakdown":  { "doing": 1, "done": 2, "todo": 3 },
+    "total_tasks": 6
+  },
+  "schema_version": "1.0",
+  "status": "ok"
+}</pre>
+    </div>
+
+    <nav class="pn-row">
+      <a class="pn" href="/guides/walkthrough-cobra.html">
+        <div class="lbl">&larr; walkthroughs</div>
+        <div class="nm">Go &middot; Cobra</div>
+      </a>
+      <a class="pn next" href="/guides/walkthrough-urfave-v3.html">
+        <div class="lbl">walkthroughs &rarr;</div>
+        <div class="nm">Go &middot; urfave/cli v3</div>
+      </a>
+    </nav>

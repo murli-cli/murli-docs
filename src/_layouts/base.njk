@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} — murli docs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/theme.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-left">
+    <a class="brand" href="/"><span class="glyph">&#9834;</span><span>murli</span><span class="ver">v1.0.2</span></a>
+  </div>
+  <div class="topbar-mid">
+    <button class="kbar" id="search-btn" type="button">
+      <span style="color:var(--muted)">&#x2315;</span><span>Search docs&hellip;</span>
+      <span class="kbd"><span>&#8984;</span><span>K</span></span>
+    </button>
+  </div>
+  <div class="topbar-right">
+    <button class="iconbtn" id="theme-btn" type="button" title="Toggle theme" onclick="_toggleTheme()">&#x2600;</button>
+    <a class="linkbtn" href="https://github.com/murli-cli" target="_blank" rel="noopener noreferrer">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px">{ }</span> github
+    </a>
+  </div>
+</header>
+<nav class="sidebar">
+  {% for group in nav.groups %}
+  <div class="sb-group">
+    <div class="sb-group-title">{{ group.title }}</div>
+    {% for link in group.links %}
+      {% if link.external %}
+        <a class="sb-link" href="{{ link.url }}" target="_blank" rel="noopener noreferrer">{{ link.label }}</a>
+      {% else %}
+        <a class="sb-link" href="{{ link.url }}">{{ link.label }}{% if link.tag %} <span class="tag {{ link.tag }}">{{ link.tag }}</span>{% endif %}</a>
+      {% endif %}
+    {% endfor %}
+  </div>
+  {% endfor %}
+</nav>
+<div class="content">
+  <main class="page">
+    {{ content | safe }}
+  </main>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@7/dist/fuse.min.js"></script>
+<script src="/search.js"></script>
+</body>
+</html>

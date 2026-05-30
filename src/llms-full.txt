@@ -1,0 +1,431 @@
+# murli v1.0.2 — Complete Reference
+
+CLI middleware for AI agent integration. Pure Go. Wraps cobra, urfave/cli v2, and urfave/cli v3.
+Replace one function call to get dual-audience output, runtime introspection, structured errors,
+and token-efficient logging.
+
+Source: https://github.com/murli-cli/murli-go
+Docs:   https://pkg.go.dev/github.com/murli-cli/murli-go
+
+
+## Install
+
+go get github.com/murli-cli/murli-go
+
+Pick one adapter:
+  go get github.com/murli-cli/murli-go/cobra      # spf13/cobra
+  go get github.com/murli-cli/murli-go/cli/v2     # urfave/cli v2
+  go get github.com/murli-cli/murli-go/cli/v3     # urfave/cli v3
+
+Requires Go 1.21 or later.
+
+
+## Quick integration (cobra)
+
+package main
+
+import (
+    "github.com/murli-cli/murli-go"
+    murliCobra "github.com/murli-cli/murli-go/cobra"
+    "github.com/spf13/cobra"
+)
+
+var queryCmd = &cobra.Command{
+    Use:   "query <text>",
+    Short: "Search the index",
+    RunE: func(cmd *cobra.Command, args []string) error {
+        w := murliCobra.NewWriter(cmd)
+        w.Progress("searching...")
+        results := []map[string]any{{"path": "/docs", "score": 0.95}}
+        w.WriteSuccess("Found 1 result", results)
+        return nil
+    },
+}
+
+func main() {
+    root := &cobra.Command{Use: "mytool"}
+    root.AddCommand(queryCmd)
+    murliCobra.Annotate(queryCmd, murli.Metadata{
+        AgentDescription: "Search the document index.",
+        Idempotent:       true,
+    })
+    _ = murliCobra.Execute(root) // only change from standard cobra
+}
+
+
+## What you get automatically (no additional code)
+
+Calling Execute/Run/Wrap injects on every command:
+  --agent           Forces JSON output regardless of TTY state
+  --schema          Prints command schema as JSON and exits
+  --force / --yes   Bypasses non-interactive confirmation guards
+  --dry-run         Signals dry-run intent; handler checks w.IsDryRun()
+  --profile <name>  Loads a named flag profile
+
+Auto-mounted subcommands on the root:
+  describe          Full command tree as JSON (see DescribeOutput below)
+  doctor            Health and config check (requires -tags murlidev)
+  profile           Profile management: list, set, use, delete
+
+TTY detection: stdout connected to terminal -> formatted text output
+               stdout piped                 -> JSON output
+               --agent flag                 -> JSON output regardless
+
+Log deduplication: consecutive identical lines to stderr are collapsed to one.
+
+
+## Adapter entry points
+
+### cobra (github.com/murli-cli/murli-go/cobra)
+
+Execute(root *cobra.Command) error
+  Drop-in replacement for root.Execute(). Injects flags, mounts subcommands,
+  wraps all RunE handlers.
+
+Enable(root *cobra.Command)
+  Same as Execute but does not replace the Execute call.
+
+NewWriter(cmd *cobra.Command) *murli.Writer
+  Creates a Writer from the command's injected flags. Call at the start of
+  every handler.
+
+Annotate(cmd *cobra.Command, meta murli.Metadata)
+  Attaches Metadata to a command. Call once per command, outside handlers.
+
+EmitSchema(cmd *cobra.Command) error
+  Writes command schema as JSON to stdout.
+
+BuildDescribeTree(cmd *cobra.Command) murli.DescribeCommandSchema
+  Builds the recursive schema tree for a command and its subcommands.
+
+
+### urfave/cli v2 (github.com/murli-cli/murli-go/cli/v2)
+
+Run(app *cli.App, args []string) error
+  Drop-in replacement for app.Run(args).
+
+NewWriter(ctx *cli.Context) *murli.Writer
+Annotate(cmd *cli.Command, meta murli.Metadata)
+AnnotateApp(app *cli.App, meta murli.Metadata)
+EmitSchema(cmd *cli.Command, w io.Writer) error
+BuildV2DescribeTree(cmd *cli.Command) murli.DescribeCommandSchema
+
+
+### urfave/cli v3 (github.com/murli-cli/murli-go/cli/v3)
+
+Run(app *cli.Command, args []string) error
+  Drop-in replacement for app.Run(ctx, args).
+
+Wrap(app *cli.Command)
+  In-place setup: injects flags, wraps Actions, mounts subcommands.
+
+NewWriter(cmd *cli.Command) *murli.Writer
+Annotate(cmd *cli.Command, meta murli.Metadata)
+EmitSchema(cmd *cli.Command, w io.Writer) error
+BuildV3DescribeTree(cmd *cli.Command) murli.DescribeCommandSchema
+
+
+## Writer API (github.com/murli-cli/murli-go)
+
+Obtain via the adapter's NewWriter in every handler. Do not construct
+directly in normal use.
+
+Constructor (for testing / custom adapters only):
+  NewWriter(stdout, stderr io.Writer, agentMode bool, opts ...WriterOption) *Writer
+
+WriterOption functions:
+  WithOutputFormat(f OutputFormat)    Override output format
+  WithProtocolVersion(v string)       Set protocol version in envelopes (default "0.2")
+  WithForce(force bool)               Set forced state
+  WithDryRun(dryRun bool)             Set dry-run state
+
+OutputFormat constants:
+  OutputFormatDefault  ""        Auto-detect: JSON if not TTY, text if TTY
+  OutputFormatJSON     "json"    Single JSON object
+  OutputFormatNDJSON   "ndjson"  Newline-delimited JSON
+  OutputFormatText     "text"    Plain text, no envelopes
+
+Output methods:
+  WriteSuccess(humanText string, jsonPayload any)
+    Writes success envelope to stdout. Human text at TTY, JSON when piped.
+
+  WritePlan(humanText string, plan any)
+    Writes plan envelope to stdout. Use when w.IsDryRun() == true.
+
+  WriteError(err *AgentError)
+    Writes error envelope to stderr and calls os.Exit(err.Code).
+    Do not return from handler after calling WriteError.
+
+  WriteEvent(v any)
+    Writes one NDJSON line to stdout. Use for streaming output.
+    The final call should be WriteSuccess.
+
+  WriteProgress(evt ProgressEvent)
+    In agent mode: writes NDJSON progress line to stdout.
+    In TTY mode: writes progress text to stderr.
+
+  Log(msg string)
+    Writes diagnostic line to stderr. Deduplicates consecutive identical lines.
+
+  Progress(msg string)
+    Writes unstructured progress line to stderr.
+
+  Flush()
+    Flushes buffered log/progress output.
+
+State methods:
+  IsTTY() bool              True if stdout is a terminal
+  IsForced() bool           True if --force or --yes was passed
+  IsDryRun() bool           True if --dry-run was passed
+  Format() OutputFormat     Current output format
+  ProtocolVersion() string  Protocol version included in envelopes
+
+ProgressEvent struct:
+  type ProgressEvent struct {
+      Stage   string  // stage name
+      Current int     // current step
+      Total   int     // total steps
+      Percent float64 // 0-100
+      EtaMs   int64   // estimated ms remaining
+      Message string  // human-readable status
+  }
+
+
+## Logger API (github.com/murli-cli/murli-go)
+
+NewLogger(writer io.Writer, isTTY bool) *Logger
+  Creates a logger. w.Log() and w.Progress() use an internal logger
+  automatically. Use NewLogger only when building outside a handler context.
+
+(*Logger).Log(line string)
+  Writes line to stderr. Suppresses if identical to previous line.
+
+(*Logger).LogProgress(line string)
+  Writes progress line. In TTY mode, overwrites previous progress line.
+
+(*Logger).Flush()
+  Flushes buffered output.
+
+
+## AgentError (github.com/murli-cli/murli-go)
+
+Constructors:
+  NewUserError(message, suggestion string) *AgentError   exit code 1
+  NewToolError(message string) *AgentError               exit code 2
+
+For other exit codes, construct directly:
+  &AgentError{
+      Code:        murli.ExitNotFound,  // 5
+      ErrorType:   "not_found",
+      Message:     "index file does not exist",
+      Suggestion:  "Run `mytool index build` to create it.",
+      Recoverable: true,
+  }
+
+AgentError fields:
+  Code          int       Exit code (use Exit* constants)
+  ErrorType     string    Machine-readable category (json: "error")
+  Message       string    Human-readable description
+  Suggestion    string    What to do next (omitempty)
+  Recoverable   bool      Whether retrying may succeed
+  ValidValues   []string  Acceptable values for enum violations (omitempty)
+  RetryAfterMs  int       Ms to wait before retrying (omitempty)
+  DocURL        string    Link to documentation (omitempty)
+  Field         string    Flag or argument that caused error (omitempty)
+  SchemaVersion string    Set automatically by WriteError
+  ToolVersion   string    Set automatically by WriteError
+
+
+## Exit codes
+
+  0  ExitOK           Success
+  1  ExitUserError    Invalid input, bad flags, constraint violation
+  2  ExitToolError    Internal failure, dependency error
+  3  ExitPartial      Partial success; some operations failed
+  4  ExitTimeout      Operation timed out
+  5  ExitNotFound     Resource does not exist
+  6  ExitPermission   Insufficient permissions
+  7  ExitConflict     State conflict (already exists, concurrent modification)
+  8  ExitRateLimited  Rate limit reached; check retry_after_ms
+  9  ExitCancelled    Operation cancelled
+
+ExitFunc defaults to os.Exit. Override in tests:
+  murli.ExitFunc = func(code int) { capturedCode = code }
+
+
+## Metadata struct (github.com/murli-cli/murli-go)
+
+Pass to adapter Annotate. All fields optional.
+
+  type Metadata struct {
+      AgentDescription string
+      WhenToUse        string
+      Idempotent       bool
+      Mutating         bool
+      DryRunnable      bool
+      Destructive      bool
+      Arguments        []ArgumentMetadata
+      Returns          *ReturnSchema
+      Examples         []Example
+      FlagAnnotations  map[string]FlagAnnotation
+  }
+
+  type ArgumentMetadata struct {
+      Name        string
+      Type        string
+      Required    bool
+      Description string
+  }
+
+  type ReturnSchema struct {
+      Type         string
+      Description  string
+      Shape        map[string]any  // field name -> type string
+      OutputSchema json.RawMessage // JSON Schema (optional)
+  }
+
+  type Example struct {
+      Command          string
+      Description      string
+      ExpectedExitCode int
+  }
+
+  type FlagAnnotation struct {
+      Env                   string
+      Sensitive             bool     // redact value in schema/logs
+      Persistent            bool     // applies to all subcommands
+      Profileable           bool     // can be saved in profiles
+      MutuallyExclusiveWith []string // flag names that conflict
+      Enum                  []string // valid values
+      Pattern               string   // regex constraint (informational)
+  }
+
+
+## Profiles API (github.com/murli-cli/murli-go)
+
+The profile subcommand is auto-mounted. Use ProfileStore directly only for
+programmatic access outside a command handler.
+
+  ProfilePath(toolName string) string
+    Returns ~/.config/<toolName>/profiles.json
+
+  LoadProfileStore(toolName string) (*ProfileStore, error)
+    Loads profiles from disk. Creates empty store if file absent.
+
+  (*ProfileStore).Save(toolName string) error
+  (*ProfileStore).Get(name string) (Profile, bool)
+  (*ProfileStore).Set(name string, p Profile)
+  (*ProfileStore).Delete(name string)
+  (*ProfileStore).SetDefault(name string) error
+  (*ProfileStore).Names() []string    // sorted
+
+  type Profile struct {
+      Flags map[string]string
+  }
+
+  type ProfileStore struct {
+      Default  string
+      Profiles map[string]Profile
+  }
+
+
+## Utilities (github.com/murli-cli/murli-go)
+
+CheckConventions(commandNames, flagNames []string, w io.Writer) int
+  Requires -tags murlidev; no-op stub in release builds.
+  Checks names against conventional vocabulary. Writes advisory warnings.
+  Returns count of issues. Use in tests or CI.
+
+  Non-standard verbs (with recommendation):
+    fetch/info/retrieve -> get
+    show-all/ls         -> list
+    remove/rm           -> delete
+    add/new/make        -> create
+    edit/modify/set     -> update
+
+  Non-standard flags (with recommendation):
+    skip-confirmations/no-confirm -> force
+    silent/no-output              -> quiet
+    preview/what-if               -> dry-run
+    format/output-format          -> output
+
+FormatAgentsMD(out DescribeOutput) string
+  Generates AGENTS.md stub from describe output. Returns Markdown string.
+
+
+## Wire format — JSON envelopes
+
+All envelopes include schema_version ("1.0") and tool_version.
+Success, plan, event envelopes -> stdout
+Error envelopes                -> stderr
+
+Success:
+  {"status":"ok","schema_version":"1.0","tool_version":"1.0.2",
+   "message":"...","result":{...}}
+
+Error:
+  {"status":"error","code":1,"error":"user_error",
+   "message":"...","suggestion":"...","recoverable":true,
+   "valid_values":["a","b"],"retry_after_ms":0,
+   "schema_version":"1.0","tool_version":"1.0.2"}
+
+Plan (dry-run):
+  {"status":"plan","schema_version":"1.0","tool_version":"1.0.2",
+   "message":"...","plan":{...}}
+
+Event (NDJSON streaming) — one line per WriteEvent call:
+  {"event":"chunk","data":"..."}
+  {"status":"ok",...}     <- final line is always success or error
+
+Progress (NDJSON, agent mode only) — one line per WriteProgress call:
+  {"event":"progress","stage":"read","current":1,"total":3,"percent":33,"eta_ms":4200}
+
+
+## Schema — describe output types
+
+DescribeOutput:
+  name, summary, schema_version, tool_version
+  capabilities: Capabilities
+  profiles: ProfilesInfo (optional)
+  commands: []DescribeCommandSchema
+
+Capabilities:
+  streaming bool, dry_run bool, profiles bool
+  output_formats []string
+  schema_version, tool_version, protocol_version string
+
+DescribeCommandSchema (recursive):
+  name, summary, agent_description, when_to_use
+  idempotent bool, mutating bool
+  arguments []ArgumentMetadata
+  flags []FlagSchema
+  returns *ReturnSchema
+  examples []Example
+  subcommands []DescribeCommandSchema
+  safety SafetyBlock
+
+FlagSchema:
+  name, type, description, env, pattern string
+  default any
+  sensitive, persistent, profileable bool
+  mutually_exclusive_with, enum []string
+
+SafetyBlock:
+  read_only bool, idempotent bool
+  destructive bool (omitempty)
+  dry_run_supported bool (omitempty)
+
+ProfilesInfo:
+  available []string, default string
+  profileable_flags []string
+
+
+## Version
+
+SchemaVersion const = "1.0"  (included in all envelopes as schema_version)
+
+ToolVersion var = ""          (set at build time via ldflags)
+  -ldflags "-X github.com/murli-cli/murli-go.ToolVersion=1.0.2"
+
+ValidOutputFormats    = ["json", "ndjson", "text"]
+ValidProtocolVersions = ["0.2"]

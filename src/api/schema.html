@@ -1,0 +1,167 @@
+---
+title: "Schema · describe"
+group: API
+keywords: schema describe describe output command schema flag schema capabilities profiles info safety block idempotent destructive dry run supported
+layout: base.njk
+---
+
+    <div class="eyebrow">&sect; API</div>
+    <h1 class="page-title">Schema &middot; describe</h1>
+    <p class="lede">The <code>describe</code> subcommand and <code>--schema</code> flag produce JSON documents that describe a CLI&rsquo;s structure, capabilities, and output contracts. These are the types that appear in that output.</p>
+
+    <h2>DescribeOutput</h2>
+    <p>The root type returned by <code>mytool describe</code>.</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">go</span></div>
+      <pre>type DescribeOutput struct {
+    Name          string                  // tool binary name
+    Summary       string                  // short description
+    SchemaVersion string                  // "1.0"
+    ToolVersion   string                  // from ToolVersion var or ldflags
+    Capabilities  Capabilities
+    Profiles      *ProfilesInfo           // nil if no profileable flags
+    Commands      []DescribeCommandSchema
+}</pre>
+    </div>
+
+    <h2>Capabilities</h2>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">go</span></div>
+      <pre>type Capabilities struct {
+    Streaming       bool     // true if WriteEvent / NDJSON is used
+    DryRun          bool     // true if --dry-run is supported
+    Profiles        bool     // true if profiles are configured
+    OutputFormats   []string // e.g. ["json", "ndjson", "text"]
+    SchemaVersion   string
+    ToolVersion     string
+    ProtocolVersion string
+}</pre>
+    </div>
+
+    <h2>DescribeCommandSchema</h2>
+    <p>Recursive type: each command contains its subcommands at the same shape.</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">go</span></div>
+      <pre>type DescribeCommandSchema struct {
+    Name             string
+    Summary          string
+    AgentDescription string
+    WhenToUse        string
+    Idempotent       bool
+    Mutating         bool
+    Arguments        []ArgumentMetadata
+    Flags            []FlagSchema
+    Returns          *ReturnSchema
+    Examples         []Example
+    Subcommands      []DescribeCommandSchema
+    Safety           SafetyBlock
+}</pre>
+    </div>
+
+    <h2>FlagSchema</h2>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">go</span></div>
+      <pre>type FlagSchema struct {
+    Name                  string
+    Type                  string   // "string", "int", "bool", "float64", etc.
+    Description           string
+    Default               any
+    Env                   string
+    Pattern               string
+    Sensitive             bool
+    Persistent            bool
+    Profileable           bool
+    MutuallyExclusiveWith []string
+    Enum                  []string
+}</pre>
+    </div>
+
+    <h2>SafetyBlock</h2>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">go</span></div>
+      <pre>type SafetyBlock struct {
+    ReadOnly    bool `json:"read_only"`
+    Idempotent  bool `json:"idempotent"`
+    Destructive bool `json:"destructive,omitempty"`
+    DryRunnable bool `json:"dry_run_supported,omitempty"`
+}</pre>
+    </div>
+
+    <h2>ProfilesInfo</h2>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">go</span></div>
+      <pre>type ProfilesInfo struct {
+    Available        []string `json:"available,omitempty"`
+    Default          string   `json:"default,omitempty"`
+    ProfileableFlags []string `json:"profileable_flags"`
+}</pre>
+    </div>
+
+    <h2>Example describe output</h2>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">shell</span></div>
+      <pre>$ mytool describe | jq .</pre>
+    </div>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">json</span></div>
+      <pre>{
+  "name": "mytool",
+  "summary": "Document search and indexing tool",
+  "schema_version": "1.0",
+  "tool_version": "1.0.2",
+  "capabilities": {
+    "streaming": false,
+    "dry_run": false,
+    "profiles": true,
+    "output_formats": ["json", "text"],
+    "schema_version": "1.0",
+    "tool_version": "1.0.2",
+    "protocol_version": "0.2"
+  },
+  "profiles": {
+    "available": ["dev", "prod"],
+    "default": "dev",
+    "profileable_flags": ["format", "top"]
+  },
+  "commands": [
+    {
+      "name": "query",
+      "summary": "Search the index",
+      "agent_description": "Search the document index for semantically similar content.",
+      "when_to_use": "When the user wants to find documents by meaning.",
+      "idempotent": true,
+      "mutating": false,
+      "flags": [
+        {
+          "name": "top",
+          "type": "int",
+          "description": "Number of results to return",
+          "default": 10,
+          "enum": ["5", "10", "20", "50"],
+          "profileable": true
+        }
+      ],
+      "returns": {
+        "type": "json",
+        "description": "Ranked list of search results",
+        "shape": { "path": "string", "score": "float32" }
+      },
+      "safety": {
+        "read_only": true,
+        "idempotent": true
+      }
+    }
+  ]
+}</pre>
+    </div>
+
+    <nav class="pn-row">
+      <a class="pn" href="/api/exit-codes.html">
+        <div class="lbl">&larr; api</div>
+        <div class="nm">Exit codes</div>
+      </a>
+      <a class="pn next" href="/api/envelopes.html">
+        <div class="lbl">api &rarr;</div>
+        <div class="nm">Envelopes</div>
+      </a>
+    </nav>

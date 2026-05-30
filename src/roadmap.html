@@ -1,0 +1,72 @@
+---
+title: Roadmap
+group: Project
+keywords: roadmap v1.0 chapter 2 typescript rust python planned future
+layout: base.njk
+---
+
+    <div class="eyebrow">&sect; Project</div>
+    <h1 class="page-title">Roadmap</h1>
+    <p class="lede">murli is at v1.0.2. The current release delivers complete Go support across three CLI frameworks. Chapter 2 begins when v1.0 stabilises in production use.</p>
+
+    <h2>v1.0.2 &mdash; current</h2>
+    <p>Patch release: developer diagnostics gated behind a build tag to keep the agent-facing command surface clean.</p>
+    <table class="tbl">
+      <thead><tr><th>Change</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr><td><code>doctor</code> subcommand</td><td>Moved to <code>-tags murlidev</code>; excluded from release builds by default</td></tr>
+        <tr><td><code>CheckConventions</code></td><td>Moved to <code>-tags murlidev</code>; no-op stub in release builds</td></tr>
+      </tbody>
+    </table>
+
+    <h2>v1.0.2</h2>
+    <p>The Go implementation is complete and stable.</p>
+
+    <table class="tbl">
+      <thead><tr><th>Feature</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>TTY detection and output routing</td><td>Automatic; no handler code required</td></tr>
+        <tr><td><code>--agent</code> flag</td><td>Forces JSON output at a TTY</td></tr>
+        <tr><td><code>--schema</code> on every command</td><td>Auto-injected by <code>Execute</code> / <code>Run</code> / <code>Wrap</code></td></tr>
+        <tr><td><code>describe</code> subcommand</td><td>Full command tree as JSON; auto-mounted</td></tr>
+        <tr><td><code>doctor</code> subcommand</td><td>Health and config check; requires <code>-tags murlidev</code> as of v1.0.2</td></tr>
+        <tr><td><code>profile</code> subcommand</td><td>Profile management; auto-mounted</td></tr>
+        <tr><td>Structured <code>AgentError</code></td><td>Exit codes 0&ndash;9, all fields</td></tr>
+        <tr><td><code>Metadata</code> annotations</td><td><code>AgentDescription</code>, <code>WhenToUse</code>, <code>Idempotent</code>, <code>Returns</code>, <code>Examples</code></td></tr>
+        <tr><td><code>FlagAnnotation</code></td><td><code>Sensitive</code>, <code>Profileable</code>, <code>Enum</code>, <code>MutuallyExclusiveWith</code>, <code>Pattern</code></td></tr>
+        <tr><td><code>WriteProgress</code> / <code>WriteEvent</code></td><td>NDJSON streaming with typed <code>ProgressEvent</code></td></tr>
+        <tr><td><code>WritePlan</code></td><td>Dry-run plan envelopes</td></tr>
+        <tr><td>Log deduplication</td><td>Consecutive identical lines collapsed</td></tr>
+        <tr><td><code>CheckConventions</code></td><td>Advisory linter for verb and flag names; requires <code>-tags murlidev</code> as of v1.0.2</td></tr>
+        <tr><td><code>FormatAgentsMD</code></td><td>AGENTS.md stub generation from describe output</td></tr>
+        <tr><td>cobra adapter</td><td><code>spf13/cobra v1.8+</code></td></tr>
+        <tr><td>urfave/cli v2 adapter</td><td><code>urfave/cli v2.27+</code></td></tr>
+        <tr><td>urfave/cli v3 adapter</td><td><code>urfave/cli v3.9+</code></td></tr>
+      </tbody>
+    </table>
+
+    <h2>Chapter 2 &mdash; language adapters</h2>
+    <p>After v1.0 stabilises in production use, the next phase adds adapters for other languages. Each implementation will ship its own module or package with framework-idiomatic signatures, sharing the same wire format and design principles as the Go reference.</p>
+
+    <table class="tbl">
+      <thead><tr><th>Language</th><th>Target frameworks</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>TypeScript</td><td>commander, yargs, oclif, citty</td><td class="muted">planned</td></tr>
+        <tr><td>Rust</td><td>clap (derive + builder), argh</td><td class="muted">planned</td></tr>
+        <tr><td>Python</td><td>click, typer, argparse</td><td class="muted">planned</td></tr>
+      </tbody>
+    </table>
+
+    <p>Track progress at <a href="https://github.com/murli-cli" target="_blank" rel="noopener noreferrer">github.com/murli-cli/murli-go</a>.</p>
+
+    <p style="color:var(--muted);font-size:13px;margin-top:32px;border-top:1px solid var(--border);padding-top:20px;">
+      Background on the design decisions behind murli: <a href="https://allankent.com/garden/projects/murli/" target="_blank" rel="noopener noreferrer">allankent.com/garden/projects/murli</a>
+    </p>
+
+    <nav class="pn-row">
+      <a class="pn" href="/api/envelopes.html">
+        <div class="lbl">&larr; api</div>
+        <div class="nm">Envelopes</div>
+      </a>
+      <span></span>
+    </nav>

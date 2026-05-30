@@ -1,0 +1,75 @@
+---
+title: Overview
+group: Introduction
+keywords: home start murli overview introduction two audiences cli agent middleware
+layout: base.njk
+---
+
+    <section class="hero">
+      <div class="eyebrow">// CLI &harr; AGENT MIDDLEWARE</div>
+      <h1>Two audiences.<br>One <span class="ac">CLI</span>.</h1>
+      <p class="lede">murli is a middleware layer for Go CLIs. It adds dual-audience output, runtime introspection, structured errors, and token-efficient logging to cobra, urfave/cli&nbsp;v2, and urfave/cli&nbsp;v3. Integration is a single function call.</p>
+      <div class="btnrow">
+        <a class="btn primary" href="/guides/installation.html">$ go get &rarr;</a>
+        <a class="btn ghost" href="/principles.html">the 5 principles</a>
+      </div>
+      <div class="status-row">
+        <span><span class="dot stable"></span>go &middot; stable v1.0.2</span>
+        <span><span class="dot planned"></span>typescript &middot; planned</span>
+        <span><span class="dot planned"></span>rust &middot; planned</span>
+        <span><span class="dot planned"></span>python &middot; planned</span>
+      </div>
+    </section>
+
+    <h2>The same command, two listeners</h2>
+    <p>murli checks whether stdout is connected to a terminal and routes output accordingly. The same command produces formatted text at a TTY and JSON when piped.</p>
+
+    <div class="demo-split">
+      <div>
+        <div class="demo-label">TTY &mdash; formatted</div>
+        <div class="code-block"><pre>$ riffle query woodworking
+Searching index...
+Found 1 matching folder
+
+  /docs/woodworking    0.95</pre></div>
+      </div>
+      <div>
+        <div class="demo-label">Piped &mdash; JSON</div>
+        <div class="code-block"><pre>$ riffle query woodworking | jq .
+{
+  "status": "ok",
+  "schema_version": "1.0",
+  "tool_version": "1.0.2",
+  "message": "Found 1 matching folder",
+  "result": [
+    { "path": "/docs/woodworking",
+      "score": 0.95 }
+  ]
+}</pre></div>
+      </div>
+    </div>
+
+    <h2>The 5 principles</h2>
+    <p>murli is built around five design principles. They describe the properties a CLI needs to be genuinely useful to both human and agent consumers.</p>
+    <table class="tbl">
+      <thead><tr><th>Principle</th><th>What it means in practice</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">Unified Interface</td><td>One tool, two audiences. No code branching on output format.</td></tr>
+        <tr><td class="mono">Self-Describing Tools</td><td>Complete command metadata available via <code>describe</code> and <code>--schema</code> at runtime, without consulting documentation.</td></tr>
+        <tr><td class="mono">Actionable Errors</td><td>Every error carries what failed, whether retrying helps, and what to do next.</td></tr>
+        <tr><td class="mono">Intentional Mutations</td><td>State-changing operations require explicit confirmation in non-interactive contexts.</td></tr>
+        <tr><td class="mono">Bounded Context</td><td>Consecutive log deduplication and NDJSON streaming keep per-session token consumption in check.</td></tr>
+      </tbody>
+    </table>
+
+    <p style="margin-top:40px;color:var(--muted);font-size:14px;">
+      Background and research: <a href="https://allankent.com/garden/projects/murli/" target="_blank" rel="noopener noreferrer">allankent.com/garden/projects/murli</a>
+    </p>
+
+    <nav class="pn-row">
+      <span></span>
+      <a class="pn next" href="/principles.html">
+        <div class="lbl">introduction &rarr;</div>
+        <div class="nm">The 5 Principles</div>
+      </a>
+    </nav>

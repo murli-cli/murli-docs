@@ -1,0 +1,88 @@
+---
+title: Installation
+group: Guides
+keywords: install setup go get module cobra urfave cli v2 v3 requirements verify
+layout: base.njk
+---
+
+    <div class="eyebrow">&sect; Guides</div>
+    <h1 class="page-title">Installation</h1>
+    <p class="lede">Install the core package and one adapter for your CLI framework. Both are required &mdash; the core provides types, the adapter provides the framework-specific wiring.</p>
+
+    <h2>Requirements</h2>
+    <table class="tbl">
+      <thead><tr><th>Requirement</th><th>Version</th></tr></thead>
+      <tbody>
+        <tr><td>Go</td><td>1.21 or later</td></tr>
+        <tr><td>Module path</td><td><code>github.com/murli-cli/murli-go</code></td></tr>
+      </tbody>
+    </table>
+
+    <h2>Install</h2>
+
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">shell</span><span class="filename">cobra</span></div>
+      <pre>go get github.com/murli-cli/murli-go
+go get github.com/murli-cli/murli-go/cobra</pre>
+    </div>
+
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">shell</span><span class="filename">urfave/cli v2</span></div>
+      <pre>go get github.com/murli-cli/murli-go
+go get github.com/murli-cli/murli-go/cli/v2</pre>
+    </div>
+
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">shell</span><span class="filename">urfave/cli v3</span></div>
+      <pre>go get github.com/murli-cli/murli-go
+go get github.com/murli-cli/murli-go/cli/v3</pre>
+    </div>
+
+    <h2>Module layout</h2>
+    <table class="tbl">
+      <thead><tr><th>Module</th><th>Contents</th><th>When</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="mono">github.com/murli-cli/murli-go</td>
+          <td>Core types: <code>Writer</code>, <code>Logger</code>, <code>AgentError</code>, <code>Metadata</code>, <code>ProfileStore</code>, schema types, exit code constants</td>
+          <td>Always</td>
+        </tr>
+        <tr>
+          <td class="mono">github.com/murli-cli/murli-go/cobra</td>
+          <td><code>Execute</code>, <code>Enable</code>, <code>NewWriter</code>, <code>Annotate</code>, <code>EmitSchema</code>, <code>BuildDescribeTree</code></td>
+          <td>cobra only</td>
+        </tr>
+        <tr>
+          <td class="mono">github.com/murli-cli/murli-go/cli/v2</td>
+          <td><code>Run</code>, <code>NewWriter</code>, <code>Annotate</code>, <code>AnnotateApp</code>, <code>EmitSchema</code>, <code>BuildV2DescribeTree</code></td>
+          <td>urfave/cli v2 only</td>
+        </tr>
+        <tr>
+          <td class="mono">github.com/murli-cli/murli-go/cli/v3</td>
+          <td><code>Run</code>, <code>Wrap</code>, <code>NewWriter</code>, <code>Annotate</code>, <code>EmitSchema</code>, <code>BuildV3DescribeTree</code></td>
+          <td>urfave/cli v3 only</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Verify</h2>
+    <p>Every CLI wrapped by murli exposes a <code>describe</code> subcommand automatically. Run it to confirm the integration is working:</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">shell</span></div>
+      <pre>mytool describe | jq '.murli'
+# {
+#   "version": "1.0.2",
+#   "adapter": "cobra"
+# }</pre>
+    </div>
+
+    <nav class="pn-row">
+      <a class="pn" href="/principles.html">
+        <div class="lbl">&larr; introduction</div>
+        <div class="nm">The 5 Principles</div>
+      </a>
+      <a class="pn next" href="/guides/quickstart.html">
+        <div class="lbl">guides &rarr;</div>
+        <div class="nm">Quickstart</div>
+      </a>
+    </nav>
