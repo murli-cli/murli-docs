@@ -99,5 +99,30 @@
         .replace(/\.html$/, '');
       if (path === lp || (path === '/' && lp === '/')) el.classList.add('active');
     });
+
+    // Code tabs — persist selected language across pages
+    var savedLang;
+    try { savedLang = localStorage.getItem('murli.lang') || 'go'; } catch (e) { savedLang = 'go'; }
+
+    function activateGroup(group, lang) {
+      var btns = group.querySelectorAll('.tab-btn');
+      var panels = group.querySelectorAll('.tab-panel');
+      var avail = Array.from(btns).map(function (b) { return b.dataset.lang; });
+      var active = avail.indexOf(lang) >= 0 ? lang : avail[0];
+      if (!active) return;
+      btns.forEach(function (b) { b.classList.toggle('active', b.dataset.lang === active); });
+      panels.forEach(function (p) { p.classList.toggle('active', p.dataset.lang === active); });
+    }
+
+    document.querySelectorAll('.code-tabs').forEach(function (group) {
+      activateGroup(group, savedLang);
+      group.querySelectorAll('.tab-btn').forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          savedLang = tab.dataset.lang;
+          try { localStorage.setItem('murli.lang', savedLang); } catch (e) {}
+          document.querySelectorAll('.code-tabs').forEach(function (g) { activateGroup(g, savedLang); });
+        });
+      });
+    });
   });
 }());

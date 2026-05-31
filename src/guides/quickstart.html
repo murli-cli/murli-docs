@@ -1,18 +1,26 @@
 ---
 title: Quickstart
 group: Guides
-keywords: quickstart quick start minimal integration example cobra urfave cli execute run wrap
+keywords: quickstart quick start minimal integration example cobra urfave cli execute run wrap click typer argparse clap argh rust python
 layout: base.njk
 ---
 
     <div class="eyebrow">&sect; Guides</div>
     <h1 class="page-title">Quickstart</h1>
-    <p class="lede">A minimal working integration for each framework. The only change from a standard application is replacing one function call.</p>
+    <p class="lede">A minimal working integration for each language and framework. The only change from a standard application is replacing one function call.</p>
 
-    <h2>cobra</h2>
-    <div class="code-block">
-      <div class="code-block-header"><span class="lang">go</span><span class="filename">main.go</span></div>
-      <pre>package main
+    <div class="code-tabs">
+      <div class="tab-bar">
+        <button class="tab-btn" data-lang="go">Go</button>
+        <button class="tab-btn" data-lang="rust">Rust</button>
+        <button class="tab-btn" data-lang="python">Python</button>
+      </div>
+
+      <!-- ── Go ─────────────────────────────────────────────────── -->
+      <div class="tab-panel" data-lang="go">
+        <div class="code-block">
+          <div class="code-block-header"><span class="lang">go</span><span class="filename">main.go &middot; cobra</span></div>
+          <pre>package main
 
 import (
 	"github.com/murli-cli/murli-go"
@@ -26,7 +34,6 @@ var queryCmd = &amp;cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		w := murliCobra.NewWriter(cmd)
 		w.Progress("searching...")
-
 		results := []map[string]any{
 			{"path": "/docs/woodworking", "score": 0.95},
 		}
@@ -38,24 +45,19 @@ var queryCmd = &amp;cobra.Command{
 func main() {
 	root := &amp;cobra.Command{Use: "mytool"}
 	root.AddCommand(queryCmd)
-
 	murliCobra.Annotate(queryCmd, murli.Metadata{
 		AgentDescription: "Search the document index.",
 		Idempotent:       true,
 	})
-
 	_ = murliCobra.Execute(root) // replaces root.Execute()
 }</pre>
-    </div>
-
-    <h2>urfave/cli v2</h2>
-    <div class="code-block">
-      <div class="code-block-header"><span class="lang">go</span><span class="filename">main.go</span></div>
-      <pre>package main
+        </div>
+        <div class="code-block">
+          <div class="code-block-header"><span class="lang">go</span><span class="filename">main.go &middot; urfave/cli v2</span></div>
+          <pre>package main
 
 import (
 	"os"
-
 	"github.com/murli-cli/murli-go"
 	murliCli "github.com/murli-cli/murli-go/cli/v2"
 	"github.com/urfave/cli/v2"
@@ -75,29 +77,18 @@ func main() {
 			return nil
 		},
 	}
-
-	murliCli.Annotate(queryCmd, murli.Metadata{
-		AgentDescription: "Search the document index.",
-		Idempotent:       true,
-	})
-
-	app := &amp;cli.App{
-		Name:     "mytool",
-		Commands: []*cli.Command{queryCmd},
-	}
+	murliCli.Annotate(queryCmd, murli.Metadata{AgentDescription: "Search the document index.", Idempotent: true})
+	app := &amp;cli.App{Name: "mytool", Commands: []*cli.Command{queryCmd}}
 	_ = murliCli.Run(app, os.Args) // replaces app.Run(os.Args)
 }</pre>
-    </div>
-
-    <h2>urfave/cli v3</h2>
-    <div class="code-block">
-      <div class="code-block-header"><span class="lang">go</span><span class="filename">main.go</span></div>
-      <pre>package main
+        </div>
+        <div class="code-block">
+          <div class="code-block-header"><span class="lang">go</span><span class="filename">main.go &middot; urfave/cli v3</span></div>
+          <pre>package main
 
 import (
 	"context"
 	"os"
-
 	"github.com/murli-cli/murli-go"
 	murliCli "github.com/murli-cli/murli-go/cli/v3"
 	"github.com/urfave/cli/v3"
@@ -117,18 +108,117 @@ func main() {
 			return nil
 		},
 	}
-
-	murliCli.Annotate(queryCmd, murli.Metadata{
-		AgentDescription: "Search the document index.",
-		Idempotent:       true,
-	})
-
-	app := &amp;cli.Command{
-		Name:     "mytool",
-		Commands: []*cli.Command{queryCmd},
-	}
+	murliCli.Annotate(queryCmd, murli.Metadata{AgentDescription: "Search the document index.", Idempotent: true})
+	app := &amp;cli.Command{Name: "mytool", Commands: []*cli.Command{queryCmd}}
 	_ = murliCli.Run(app, os.Args) // replaces app.Run(context.Background(), os.Args)
 }</pre>
+        </div>
+      </div>
+
+      <!-- ── Rust ───────────────────────────────────────────────── -->
+      <div class="tab-panel" data-lang="rust">
+        <div class="code-block">
+          <div class="code-block-header"><span class="lang">rust</span><span class="filename">main.rs &middot; clap (derive)</span></div>
+          <pre>use clap::{CommandFactory, Parser};
+use murli::clap::GlobalArgs;
+use murli::Writer;
+use serde_json::json;
+
+#[derive(Parser)]
+#[command(name = "mytool", about = "My search tool")]
+struct Cli {
+    #[command(flatten)]
+    murli: GlobalArgs,       // --agent --schema --force --dry-run --output --profile
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(clap::Subcommand)]
+enum Commands {
+    Query { text: String },
+}
+
+fn main() {
+    let args = Cli::parse();
+    murli::clap::handle_builtins(&amp;args.murli, &amp;Cli::command(), None);
+    let mut writer = Writer::from_args(&amp;args.murli);
+
+    match args.command {
+        Commands::Query { text } =&gt; {
+            writer.log("searching...");
+            let results = json!([{"path": "/docs/woodworking", "score": 0.95}]);
+            writer.write_success("Found 1 result", &amp;results);
+        }
+    }
+}</pre>
+        </div>
+        <div class="code-block">
+          <div class="code-block-header"><span class="lang">toml</span><span class="filename">Cargo.toml</span></div>
+          <pre>[dependencies]
+murli      = { version = "0.1", features = ["clap"] }
+clap       = { version = "4", features = ["derive"] }
+serde_json = "1"</pre>
+        </div>
+        <p style="margin-top:12px;font-size:14px;color:var(--muted)">See the <a href="/lang/rust.html">Rust reference</a> for the clap builder API and argh adapter.</p>
+      </div>
+
+      <!-- ── Python ─────────────────────────────────────────────── -->
+      <div class="tab-panel" data-lang="python">
+        <div class="code-block">
+          <div class="code-block-header"><span class="lang">python</span><span class="filename">cli.py &middot; click</span></div>
+          <pre>import click
+import murli
+
+@click.group()
+def cli(): pass
+
+murli.enable(cli)  # adds --agent, --schema, --force, --dry-run, --output, --profile
+                   # mounts describe, doctor, profile subcommands
+
+@cli.command()
+@click.argument("text")
+@murli.pass_writer
+def query(writer, text):
+    writer.log("searching...")
+    results = [{"path": "/docs/woodworking", "score": 0.95}]
+    writer.write_success("Found 1 result", results)
+
+if __name__ == "__main__":
+    cli()</pre>
+        </div>
+        <div class="code-block">
+          <div class="code-block-header"><span class="lang">python</span><span class="filename">cli.py &middot; typer</span></div>
+          <pre>import typer
+import murli
+
+app = typer.Typer()
+murli.enable(app)
+
+@app.command()
+def query(ctx: typer.Context, text: str):
+    writer = murli.get_writer(ctx)
+    writer.log("searching...")
+    results = [{"path": "/docs/woodworking", "score": 0.95}]
+    writer.write_success("Found 1 result", results)
+
+if __name__ == "__main__":
+    app()</pre>
+        </div>
+        <div class="code-block">
+          <div class="code-block-header"><span class="lang">python</span><span class="filename">cli.py &middot; argparse</span></div>
+          <pre>import argparse
+import murli
+
+parser = argparse.ArgumentParser()
+murli.enable(parser)
+parser.add_argument("text")
+
+args, writer = murli.parse(parser)
+writer.log("searching...")
+results = [{"path": "/docs/woodworking", "score": 0.95}]
+writer.write_success("Found 1 result", results)</pre>
+        </div>
+      </div>
     </div>
 
     <h2>What this gives you immediately</h2>
@@ -136,13 +226,13 @@ func main() {
       <thead><tr><th>Feature</th><th>How to invoke</th></tr></thead>
       <tbody>
         <tr><td>Dual-audience output</td><td>Run at a TTY for formatted output; pipe to any command for JSON</td></tr>
-        <tr><td><code>--agent</code></td><td>Forces JSON output at a TTY: <code>mytool query foo --agent</code></td></tr>
-        <tr><td><code>--schema</code></td><td>Prints command schema as JSON and exits: <code>mytool query --schema</code></td></tr>
+        <tr><td><code>--agent</code></td><td>Forces JSON output at a TTY</td></tr>
+        <tr><td><code>--schema</code></td><td>Prints command schema as JSON and exits</td></tr>
         <tr><td><code>describe</code></td><td>Dumps full command tree: <code>mytool describe</code></td></tr>
-        <tr><td><code>doctor</code></td><td>Dev-only health check (requires <code>-tags murlidev</code>): <code>mytool doctor</code></td></tr>
+        <tr><td><code>doctor</code></td><td>Dev-only health check (Go: <code>-tags murlidev</code>)</td></tr>
         <tr><td><code>profile</code></td><td>Named flag profiles: <code>mytool profile list</code></td></tr>
         <tr><td><code>--force</code> / <code>--yes</code></td><td>Non-interactive confirmation bypass</td></tr>
-        <tr><td><code>--dry-run</code></td><td>Dry-run mode (handler checks <code>w.IsDryRun()</code>)</td></tr>
+        <tr><td><code>--dry-run</code></td><td>Dry-run mode (handler checks <code>w.IsDryRun()</code> / <code>writer.is_dry_run()</code>)</td></tr>
       </tbody>
     </table>
 

@@ -244,6 +244,30 @@ code {
   color: var(--text); background: transparent; border: none;
 }
 
+/* ── Code tabs ───────────────────────────────────────────────── */
+
+.code-tabs { margin: 16px 0; }
+
+.tab-bar {
+  display: flex; align-items: flex-end;
+  background: var(--surface); border: 1px solid var(--code-bdr);
+  border-bottom: none; border-radius: 8px 8px 0 0;
+  padding: 0 10px; gap: 2px;
+}
+
+.tab-btn {
+  background: none; border: none; border-bottom: 2px solid transparent;
+  color: var(--muted); cursor: pointer;
+  font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 500;
+  padding: 7px 10px; transition: color 0.1s;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { border-bottom-color: var(--accent); color: var(--accent); }
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+.tab-panel > .code-block { margin: 0; border-radius: 0 0 8px 8px; border-top: none; }
+
 /* ── Tables ──────────────────────────────────────────────────── */
 
 .tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 16px 0; }
