@@ -46,18 +46,18 @@ layout: base.njk
     </table>
 
     <h2>Chapter 2 &mdash; language adapters</h2>
-    <p>After v1.0 stabilises in production use, the next phase adds adapters for other languages. Each implementation will ship its own module or package with framework-idiomatic signatures, sharing the same wire format and design principles as the Go reference.</p>
+    <p>Each implementation ships its own module or package with framework-idiomatic signatures, sharing the same wire format and design principles as the Go reference.</p>
 
     <table class="tbl">
-      <thead><tr><th>Language</th><th>Target frameworks</th><th>Status</th></tr></thead>
+      <thead><tr><th>Language</th><th>Frameworks</th><th>Package</th><th>Status</th></tr></thead>
       <tbody>
-        <tr><td>TypeScript</td><td>commander, yargs, oclif, citty</td><td class="muted">planned</td></tr>
-        <tr><td>Rust</td><td>clap (derive + builder), argh</td><td class="muted">planned</td></tr>
-        <tr><td>Python</td><td>click, typer, argparse</td><td class="muted">planned</td></tr>
+        <tr><td>Rust</td><td>clap (derive + builder), argh</td><td><a href="https://github.com/murli-cli/murli-rs" target="_blank" rel="noopener noreferrer">murli-cli/murli-rs</a></td><td><span style="color:var(--green)">stable</span></td></tr>
+        <tr><td>Python</td><td>click, typer, argparse</td><td><a href="https://github.com/murli-cli/murli-py" target="_blank" rel="noopener noreferrer">murli-cli/murli-py</a></td><td><span style="color:var(--green)">stable</span></td></tr>
+        <tr><td>TypeScript</td><td>commander, yargs, oclif, citty</td><td>&mdash;</td><td class="muted">planned</td></tr>
       </tbody>
     </table>
 
-    <p>Track progress at <a href="https://github.com/murli-cli" target="_blank" rel="noopener noreferrer">github.com/murli-cli/murli-go</a>.</p>
+    <p>Track progress at <a href="https://github.com/murli-cli" target="_blank" rel="noopener noreferrer">github.com/murli-cli</a>.</p>
 
     <p style="color:var(--muted);font-size:13px;margin-top:32px;border-top:1px solid var(--border);padding-top:20px;">
       Background on the design decisions behind murli: <a href="https://allankent.com/garden/projects/murli/" target="_blank" rel="noopener noreferrer">allankent.com/garden/projects/murli</a>

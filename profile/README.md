@@ -1,6 +1,6 @@
 # murli-cli
 
-**murli** is a middleware layer that makes Go CLIs usable by both humans and AI agents — without branching your code for each audience.
+**murli** is a middleware layer that makes CLIs usable by both humans and AI agents — without branching your code for each audience.
 
 Wrap your CLI in one function call. Everything else is automatic.
 
@@ -57,7 +57,9 @@ _ = murliCli.Run(app, os.Args)
 | Repository | Description |
 |---|---|
 | [murli-go](https://github.com/murli-cli/murli-go) | The Go library — cobra, urfave/cli v2, and urfave/cli v3 adapters |
-| [murli-demo](https://github.com/murli-cli/murli-demo) | Reference integrations — `murli-work`, a sprint task tracker, integrated across all three frameworks |
+| [murli-rs](https://github.com/murli-cli/murli-rs) | The Rust library — clap (derive + builder) and argh adapters |
+| [murli-py](https://github.com/murli-cli/murli-py) | The Python library — click, typer, and argparse adapters |
+| [murli-demo](https://github.com/murli-cli/murli-demo) | Reference integrations — `murli-work`, a sprint task tracker, integrated across all three Go frameworks |
 | [murli-docs](https://github.com/murli-cli/murli-docs) | Documentation site source — built with Eleventy, deployed to Cloudflare Workers |
 
 ## Wire format
@@ -77,9 +79,9 @@ Exit codes 0–9 distinguish success, user error, tool error, partial success, t
 | Language | Frameworks | Status |
 |---|---|---|
 | Go | cobra, urfave/cli v2, urfave/cli v3 | stable v1.0.2 |
+| Rust | clap (derive + builder), argh | stable |
+| Python | click, typer, argparse | stable |
 | TypeScript | commander, yargs, oclif, citty | planned |
-| Rust | clap (derive + builder), argh | planned |
-| Python | click, typer, argparse | planned |
 
 ## Links
 

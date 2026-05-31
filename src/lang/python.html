@@ -1,30 +1,254 @@
 ---
 title: Python
 group: Language Reference
-keywords: python planned click typer argparse pip packages
+keywords: python click typer argparse murli enable annotate get_writer pass_writer parse writer write_success write_error write_event write_progress metadata agent_error pip install stable
 layout: base.njk
 ---
 
     <div class="eyebrow">&sect; Language Reference</div>
-    <h1 class="page-title">Python <span class="pill planned" style="font-size:13px;margin-left:12px">&#x25D0; planned</span></h1>
-    <p class="lede">Adapters for <code>click</code>, <code>typer</code>, and <code>argparse</code>. The Python implementation will share the same wire format and design principles as the Go reference.</p>
+    <h1 class="page-title">Python <span class="pill stable" style="font-size:13px;margin-left:12px">&#x25CF; stable</span></h1>
+    <p class="lede">Adapters for <code>click</code>, <code>typer</code>, and <code>argparse</code>. One call to <code>murli.enable()</code> adds dual-audience output, runtime introspection, structured errors, and safety rails to any Python CLI.</p>
 
-    <div class="callout warn">
-      <span class="h">// Status</span>
-      Not yet published. Packages not yet available on PyPI. Track progress at <a href="https://github.com/murli-cli" target="_blank" rel="noopener noreferrer">github.com/murli-cli/murli-go</a>.
+    <h2>Installation</h2>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">shell</span><span class="filename">pip</span></div>
+      <pre>pip install murli                  # core + argparse adapter
+pip install "murli[click]"         # + click adapter
+pip install "murli[typer]"         # + typer adapter
+pip install "murli[all]"           # click + typer</pre>
     </div>
 
-    <h2>Planned packages</h2>
+    <h2>Quick start</h2>
+
+    <h3>click</h3>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">python</span><span class="filename">cli.py</span></div>
+      <pre>import click
+import murli
+
+@click.group()
+def cli(): pass
+
+murli.enable(cli)  # injects --agent, --schema, --force, --dry-run, --output, --profile
+                   # mounts describe, doctor, profile subcommands
+
+@cli.command()
+@murli.pass_writer
+def deploy(writer):
+    writer.write_success("Deployed", {"status": "ok"})
+
+if __name__ == "__main__":
+    cli()</pre>
+    </div>
+
+    <h3>typer</h3>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">python</span><span class="filename">cli.py</span></div>
+      <pre>import typer
+import murli
+
+app = typer.Typer()
+murli.enable(app)
+
+@app.command()
+def deploy(ctx: typer.Context):
+    writer = murli.get_writer(ctx)
+    writer.write_success("Deployed", {"status": "ok"})
+
+if __name__ == "__main__":
+    app()</pre>
+    </div>
+
+    <h3>argparse</h3>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">python</span><span class="filename">cli.py</span></div>
+      <pre>import argparse
+import murli
+
+parser = argparse.ArgumentParser(description="My tool")
+murli.enable(parser)
+parser.add_argument("--env", required=True)
+
+args, writer = murli.parse(parser)   # drop-in for parse_args()
+writer.write_success(f"Deployed to {args.env}", {"env": args.env})</pre>
+    </div>
+
+    <h2>Entry points</h2>
     <table class="tbl">
-      <thead><tr><th>Package</th><th>Framework</th><th>Status</th></tr></thead>
+      <thead><tr><th>Function</th><th>Signature</th><th>Purpose</th></tr></thead>
       <tbody>
-        <tr><td class="mono">murli-click</td><td>click</td><td class="muted">planned</td></tr>
-        <tr><td class="mono">murli-typer</td><td>typer</td><td class="muted">planned</td></tr>
-        <tr><td class="mono">murli-argparse</td><td>argparse</td><td class="muted">planned</td></tr>
+        <tr>
+          <td class="mono">enable</td>
+          <td class="mono muted">enable(app) &rarr; None</td>
+          <td>Enable murli on a <code>click.Group</code>, <code>typer.Typer</code>, or <code>argparse.ArgumentParser</code>. Injects flags, mounts subcommands.</td>
+        </tr>
+        <tr>
+          <td class="mono">annotate</td>
+          <td class="mono muted">annotate(cmd, meta: Metadata) &rarr; None</td>
+          <td>Attach rich metadata to a command for schema and <code>describe</code> output.</td>
+        </tr>
+        <tr>
+          <td class="mono">get_writer</td>
+          <td class="mono muted">get_writer(ctx) &rarr; Writer</td>
+          <td>Retrieve the <code>Writer</code> from a click or typer context object.</td>
+        </tr>
+        <tr>
+          <td class="mono">parse</td>
+          <td class="mono muted">parse(parser, args=None) &rarr; (Namespace, Writer)</td>
+          <td>argparse drop-in for <code>parse_args()</code>. Returns the namespace and a configured Writer.</td>
+        </tr>
+        <tr>
+          <td class="mono">@pass_writer</td>
+          <td class="mono muted">decorator</td>
+          <td>click decorator — injects <code>writer: Writer</code> as the first argument to the decorated function.</td>
+        </tr>
       </tbody>
     </table>
 
-    <p>When available, this page will contain the full Python API reference, pip installation instructions, and framework-specific quickstart examples.</p>
+    <h2>Writer</h2>
+
+    <h3>Output methods</h3>
+    <table class="tbl">
+      <thead><tr><th>Method</th><th>TTY</th><th>Agent / piped</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">write_success(human_text, json_payload)</td><td>stdout plain text</td><td><code>{"status":"ok",...}</code> to stdout</td></tr>
+        <tr><td class="mono">write_plan(human_text, plan)</td><td>stdout plain text</td><td><code>{"status":"plan",...}</code> to stdout</td></tr>
+        <tr><td class="mono">write_error(err: AgentError)</td><td>stderr plain text + exit</td><td><code>{"status":"error",...}</code> to stderr + exit</td></tr>
+        <tr><td class="mono">write_event(v)</td><td>no-op</td><td>NDJSON line to stdout</td></tr>
+        <tr><td class="mono">write_progress(evt: ProgressEvent)</td><td>stderr plain text</td><td><code>{"event":"progress",...}</code> to stdout</td></tr>
+        <tr><td class="mono">log(msg)</td><td>stderr (deduplicated)</td><td>stderr (deduplicated)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>State methods</h3>
+    <table class="tbl">
+      <thead><tr><th>Method</th><th>Returns</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">is_tty() &rarr; bool</td><td>True if stdout is a terminal</td></tr>
+        <tr><td class="mono">is_forced() &rarr; bool</td><td>True if <code>--force</code> or <code>--yes</code> was passed</td></tr>
+        <tr><td class="mono">is_dry_run() &rarr; bool</td><td>True if <code>--dry-run</code> was passed</td></tr>
+      </tbody>
+    </table>
+
+    <h3>ProgressEvent</h3>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">python</span></div>
+      <pre>murli.ProgressEvent(
+    stage="indexing",
+    current=500,
+    total=2000,
+    percent=25.0,
+    eta_ms=6000,
+    message="Indexing files",
+)</pre>
+    </div>
+
+    <h2>Metadata</h2>
+    <p>Pass to <code>murli.annotate()</code>. All fields are optional.</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">python</span></div>
+      <pre>murli.annotate(deploy_cmd, murli.Metadata(
+    agent_description="Deploys the application to the target environment.",
+    when_to_use="Use when the build has passed and artifacts are ready.",
+    idempotent=False,
+    mutating=True,
+    dry_runnable=True,
+    destructive=False,
+    returns=murli.ReturnSchema(
+        description="Deployment result",
+        type="object",
+        properties={"env": "string", "version": "string"},
+    ),
+    examples=[
+        murli.Example(command="mytool deploy --env prod", description="Deploy to production"),
+    ],
+    flag_annotations={
+        "env":   murli.FlagAnnotation(enum=["dev", "staging", "prod"], env="MYTOOL_ENV"),
+        "token": murli.FlagAnnotation(sensitive=True, env="MYTOOL_TOKEN"),
+    },
+))</pre>
+    </div>
+
+    <h3>Metadata fields</h3>
+    <table class="tbl">
+      <thead><tr><th>Field</th><th>Type</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">agent_description</td><td class="mono muted">str</td><td>Description optimised for agent consumption</td></tr>
+        <tr><td class="mono">when_to_use</td><td class="mono muted">str</td><td>Guidance on when to choose this command over alternatives</td></tr>
+        <tr><td class="mono">idempotent</td><td class="mono muted">bool</td><td>True if calling multiple times yields the same result</td></tr>
+        <tr><td class="mono">mutating</td><td class="mono muted">bool</td><td>True if the command changes state. Activates the confirmation guard in non-interactive mode.</td></tr>
+        <tr><td class="mono">dry_runnable</td><td class="mono muted">bool</td><td>True if <code>--dry-run</code> is supported</td></tr>
+        <tr><td class="mono">destructive</td><td class="mono muted">bool</td><td>True if the command deletes or irreversibly modifies data</td></tr>
+        <tr><td class="mono">returns</td><td class="mono muted">ReturnSchema | None</td><td>Shape and description of the JSON payload</td></tr>
+        <tr><td class="mono">examples</td><td class="mono muted">list[Example]</td><td>Worked examples with command string and description</td></tr>
+        <tr><td class="mono">flag_annotations</td><td class="mono muted">dict[str, FlagAnnotation]</td><td>Per-flag metadata. Key is the flag name.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>FlagAnnotation fields</h3>
+    <table class="tbl">
+      <thead><tr><th>Field</th><th>Type</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">env</td><td class="mono muted">str</td><td>Environment variable that sets this flag</td></tr>
+        <tr><td class="mono">sensitive</td><td class="mono muted">bool</td><td>Value redacted in schema output and logs</td></tr>
+        <tr><td class="mono">persistent</td><td class="mono muted">bool</td><td>Flag applies to all subcommands</td></tr>
+        <tr><td class="mono">enum</td><td class="mono muted">list[str]</td><td>Valid values. Surfaced in schema and error envelopes.</td></tr>
+        <tr><td class="mono">pattern</td><td class="mono muted">str</td><td>Regex the value must match (informational)</td></tr>
+        <tr><td class="mono">mutually_exclusive_with</td><td class="mono muted">list[str]</td><td>Flag names that cannot be set simultaneously</td></tr>
+        <tr><td class="mono">profileable</td><td class="mono muted">bool</td><td>Flag can be saved and recalled via named profiles</td></tr>
+      </tbody>
+    </table>
+
+    <h2>AgentError</h2>
+    <p>Raise an <code>AgentError</code> to write a structured error envelope to stderr and exit with the appropriate code.</p>
+
+    <h3>Convenience constructors</h3>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">python</span></div>
+      <pre>raise murli.AgentError.user_error("query string cannot be empty", "Provide a search keyword.")
+raise murli.AgentError.tool_error("database connection failed: timeout after 30s")
+raise murli.AgentError.not_found("index not found at ~/.mytool/index", "Run `mytool index build`.")
+raise murli.AgentError.rate_limited("API rate limit hit", retry_after_ms=5000)</pre>
+    </div>
+
+    <h3>Full constructor</h3>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">python</span></div>
+      <pre>raise murli.AgentError(
+    code=murli.EXIT_NOT_FOUND,
+    error_type="index_missing",
+    message="Semantic index not found at ~/.mytool/index",
+    suggestion="Run `mytool index build` to create the index first.",
+    recoverable=False,
+    doc_url="https://example.com/docs/indexing",
+)</pre>
+    </div>
+
+    <h2>Profiles</h2>
+    <p>The <code>profile</code> subcommand is auto-mounted by <code>murli.enable()</code>. Mark any flag as <code>profileable=True</code> in its <code>FlagAnnotation</code> to include it in profile operations.</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">shell</span></div>
+      <pre># Save flags as a named profile
+$ mytool profile set production env=prod token=abc123
+
+# Use a profile by default
+$ mytool profile set-default production
+
+# Override for a single invocation
+$ mytool --profile staging deploy</pre>
+    </div>
+    <p>Profile subcommands: <code>list</code>, <code>set</code>, <code>delete</code>, <code>set-default</code>, <code>show</code>. Profiles are stored in <code>platformdirs.user_config_dir(tool_name) / "profiles.json"</code>.</p>
+
+    <h2>Differences from the Go implementation</h2>
+    <table class="tbl">
+      <thead><tr><th>Feature</th><th>murli-go</th><th>murli-py</th></tr></thead>
+      <tbody>
+        <tr><td>Profile storage</td><td><code>~/.<tool>/profiles.json</code></td><td><code>platformdirs.user_config_dir</code> (platform-appropriate path)</td></tr>
+        <tr><td>Profile save command</td><td><code>profile save</code> / <code>profile use</code></td><td><code>profile set</code> / <code>profile set-default</code></td></tr>
+        <tr><td>Mutation guard scope</td><td>Per-command (cobra wraps all)</td><td>Per leaf command (Groups are routers, not guards)</td></tr>
+        <tr><td>Context cancellation</td><td>Auto-mapped from <code>context.Canceled</code></td><td>Not applicable (synchronous Python)</td></tr>
+      </tbody>
+    </table>
 
     <nav class="pn-row">
       <a class="pn" href="/lang/rust.html">

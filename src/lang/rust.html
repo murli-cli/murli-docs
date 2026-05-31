@@ -1,29 +1,184 @@
 ---
 title: Rust
 group: Language Reference
-keywords: rust planned clap argh derive builder crates
+keywords: rust clap argh derive builder murli enable global_args writer from_args handle_builtins write_success write_error write_event write_progress agent_error cargo stable
 layout: base.njk
 ---
 
     <div class="eyebrow">&sect; Language Reference</div>
-    <h1 class="page-title">Rust <span class="pill planned" style="font-size:13px;margin-left:12px">&#x25D0; planned</span></h1>
-    <p class="lede">Adapters for <code>clap</code> (derive and builder APIs) and <code>argh</code>. The Rust implementation will share the same wire format and design principles as the Go reference.</p>
+    <h1 class="page-title">Rust <span class="pill stable" style="font-size:13px;margin-left:12px">&#x25CF; stable</span></h1>
+    <p class="lede">Adapters for <code>clap</code> (derive and builder APIs) and <code>argh</code>. The Rust implementation shares the same wire format and exit code taxonomy as the Go reference.</p>
 
-    <div class="callout warn">
-      <span class="h">// Status</span>
-      Not yet published. Crates not yet available on crates.io. Track progress at <a href="https://github.com/murli-cli" target="_blank" rel="noopener noreferrer">github.com/murli-cli/murli-go</a>.
+    <h2>Installation</h2>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">toml</span><span class="filename">Cargo.toml</span></div>
+      <pre>[dependencies]
+murli = { version = "0.1", features = ["clap"] }         # clap adapter
+murli = { version = "0.1", features = ["argh"] }         # argh adapter
+murli = { version = "0.1", features = ["clap", "argh"] } # both</pre>
     </div>
 
-    <h2>Planned crates</h2>
+    <h2>clap — derive API</h2>
+    <p>Flatten <code>GlobalArgs</code> into your top-level struct, then call <code>handle_builtins</code> before dispatching commands.</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">rust</span><span class="filename">main.rs</span></div>
+      <pre>use clap::{CommandFactory, Parser};
+use murli::clap::GlobalArgs;
+use murli::Writer;
+use serde_json::json;
+
+#[derive(Parser)]
+#[command(name = "mytool", about = "My deployment tool")]
+struct Cli {
+    #[command(flatten)]
+    murli: GlobalArgs,    // --agent --schema --force --dry-run --output --profile
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(clap::Subcommand)]
+enum Commands {
+    Deploy { env: String },
+}
+
+fn main() {
+    let args = Cli::parse();
+    // handles --schema and mutation guard; exits if consumed
+    murli::clap::handle_builtins(&amp;args.murli, &amp;Cli::command(), None);
+    let mut writer = Writer::from_args(&amp;args.murli);
+
+    match args.command {
+        Commands::Deploy { env } =&gt; {
+            if writer.is_dry_run() {
+                writer.write_plan(&amp;format!("Would deploy to {env}"), &amp;json!({"env": env}));
+            } else {
+                writer.write_success(&amp;format!("Deployed to {env}"), &amp;json!({"env": env}));
+            }
+        }
+    }
+}</pre>
+    </div>
+
+    <h2>clap — builder API</h2>
+    <p><code>murli::clap::enable</code> adds all murli flags to an existing <code>Command</code> and mounts <code>describe</code>, <code>doctor</code>, and <code>profile</code> as real subcommands.</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">rust</span><span class="filename">main.rs</span></div>
+      <pre>fn main() {
+    let mut cmd = build_my_command();
+    murli::clap::enable(&amp;mut cmd);
+    let matches = cmd.get_matches();
+    // exits if describe/doctor/profile/--schema was invoked
+    murli::clap::handle_matches(&amp;matches, &amp;build_my_command());
+    let writer = murli::Writer::new(
+        matches.get_flag("agent"),
+        None, false, false, env!("CARGO_PKG_VERSION"),
+    );
+    // dispatch using matches
+}</pre>
+    </div>
+
+    <h2>argh</h2>
+
+    <div class="callout warn">
+      <span class="h">argh 0.1.x limitation</span>
+      argh 0.1.x does not support <code>#[argh(flatten)]</code>. Parse <code>GlobalArgs</code> separately alongside your own args struct, or wait for flatten support in a future argh release.
+    </div>
+
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">rust</span><span class="filename">main.rs</span></div>
+      <pre>use argh::FromArgs;
+use murli::argh::GlobalArgs;
+use serde_json::json;
+
+#[derive(FromArgs, Debug)]
+#[argh(description = "My deployment tool")]
+struct Cli {
+    /// Target environment
+    #[argh(option)]
+    env: String,
+}
+
+fn main() {
+    let raw: Vec&lt;String&gt; = std::env::args().skip(1).collect();
+    let strs: Vec&lt;&amp;str&gt; = raw.iter().map(|s| s.as_str()).collect();
+    let murli_args = GlobalArgs::from_args(&amp;["mytool"], &amp;strs).unwrap_or_default();
+    murli::argh::handle_builtins(&amp;murli_args, None, "mytool", "My deployment tool");
+    let mut writer = murli::argh::writer_from_args(&amp;murli_args);
+
+    let args: Cli = argh::from_env();
+    writer.write_success(&amp;format!("Deployed to {}", args.env), &amp;json!({"env": args.env}));
+}</pre>
+    </div>
+
+    <h2>Writer</h2>
+    <p>Obtain via <code>Writer::from_args(&amp;global_args)</code> (derive) or <code>Writer::new(...)</code> (builder/custom).</p>
+
+    <h3>Output methods</h3>
     <table class="tbl">
-      <thead><tr><th>Crate</th><th>Framework</th><th>Status</th></tr></thead>
+      <thead><tr><th>Method</th><th>Writes to</th><th>When</th></tr></thead>
       <tbody>
-        <tr><td class="mono">murli-clap</td><td>clap (derive + builder)</td><td class="muted">planned</td></tr>
-        <tr><td class="mono">murli-argh</td><td>argh</td><td class="muted">planned</td></tr>
+        <tr><td class="mono">write_success(&amp;str, &amp;Value)</td><td>stdout</td><td>Command completed successfully</td></tr>
+        <tr><td class="mono">write_plan(&amp;str, &amp;Value)</td><td>stdout</td><td>Dry-run: show what would happen</td></tr>
+        <tr><td class="mono">write_error(AgentError)</td><td>stderr + exit</td><td>Command failed; process exits with error code</td></tr>
+        <tr><td class="mono">write_event(&amp;Value)</td><td>stdout</td><td>One NDJSON line per call for streaming output</td></tr>
+        <tr><td class="mono">write_progress(ProgressEvent)</td><td>stdout (agent) / stderr (TTY)</td><td>Typed progress update</td></tr>
+        <tr><td class="mono">log(&amp;str)</td><td>stderr</td><td>Diagnostic line with deduplication</td></tr>
       </tbody>
     </table>
 
-    <p>When available, this page will contain the full Rust API reference, Cargo.toml configuration, and framework-specific quickstart examples.</p>
+    <h3>State methods</h3>
+    <table class="tbl">
+      <thead><tr><th>Method</th><th>Returns</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">is_tty() &rarr; bool</td><td>True if stdout is a terminal</td></tr>
+        <tr><td class="mono">is_forced() &rarr; bool</td><td>True if <code>--force</code> or <code>--yes</code> was passed</td></tr>
+        <tr><td class="mono">is_dry_run() &rarr; bool</td><td>True if <code>--dry-run</code> was passed</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout info">
+      <span class="h">Testing</span>
+      Use <code>write_error_to_streams</code> instead of <code>write_error</code> in tests — it writes the error envelope without calling <code>process::exit</code>, so the test process continues.
+    </div>
+
+    <h2>AgentError</h2>
+
+    <h3>Convenience constructors</h3>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">rust</span></div>
+      <pre>writer.write_error(AgentError::user_error("flag --env is required", "pass --env prod"));
+writer.write_error(AgentError::tool_error("database connection failed"));
+writer.write_error(AgentError::not_found("index not found", "run `mytool index build`"));
+writer.write_error(AgentError::rate_limited("API limit hit", 5000));</pre>
+    </div>
+
+    <h3>Full struct</h3>
+    <div class="code-block">
+      <div class="code-block-header"><span class="lang">rust</span></div>
+      <pre>writer.write_error(AgentError {
+    code:        EXIT_NOT_FOUND,
+    error_type:  "index_missing".into(),
+    message:     "Semantic index not found".into(),
+    suggestion:  "Run `mytool index build`".into(),
+    recoverable: false,
+    doc_url:     "https://example.com/docs".into(),
+    ..Default::default()
+});</pre>
+    </div>
+
+    <h2>Differences from the Go implementation</h2>
+    <table class="tbl">
+      <thead><tr><th>Feature</th><th>murli-go</th><th>murli-rs</th></tr></thead>
+      <tbody>
+        <tr><td>Flag injection</td><td>Dynamic at runtime</td><td>clap: <code>#[command(flatten)]</code>; argh: separate parse</td></tr>
+        <tr><td>argh flatten</td><td>N/A</td><td>Not available in argh 0.1.x</td></tr>
+        <tr><td><code>--yes</code> alias</td><td>Sibling flag</td><td><code>visible_alias = "yes"</code> on <code>--force</code></td></tr>
+        <tr><td><code>enum</code> field name</td><td><code>Enum []string</code></td><td><code>enum_values: Vec&lt;String&gt;</code> (reserved word)</td></tr>
+        <tr><td>argh describe</td><td>Auto-introspected at runtime</td><td>Metadata-driven (argh has no runtime command tree)</td></tr>
+        <tr><td>Process exit hook</td><td><code>murli.ExitFunc</code></td><td><code>write_error_to_streams</code> test helper</td></tr>
+        <tr><td>Profile path</td><td><code>~/.<tool>/</code></td><td><code>dirs::config_dir()/<tool>/</code></td></tr>
+      </tbody>
+    </table>
 
     <nav class="pn-row">
       <a class="pn" href="/lang/typescript.html">

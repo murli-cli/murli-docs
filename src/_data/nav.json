@@ -30,8 +30,8 @@
       "links": [
         { "label": "Go", "url": "/lang/go.html", "tag": "stable" },
         { "label": "TypeScript", "url": "/lang/typescript.html", "tag": "planned" },
-        { "label": "Rust", "url": "/lang/rust.html", "tag": "planned" },
-        { "label": "Python", "url": "/lang/python.html", "tag": "planned" }
+        { "label": "Rust", "url": "/lang/rust.html", "tag": "stable" },
+        { "label": "Python", "url": "/lang/python.html", "tag": "stable" }
       ]
     },
     {
